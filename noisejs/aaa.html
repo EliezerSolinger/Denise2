@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<head>
+  <title>
+    all adventures are awesome</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- bootstrap 4 stuff-->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <!-- jquery not slim-->
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <!-- bootstrap 4 stuff-->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <!-- noisejs-->
+  <script src='perlin.js'></script>
+  <script src='noisex.js'></script>
+</head>
+<div class="container py-3">
+  <h1 class="w-100 text-center">
+    all adventures are awesome
+  </h1>
+  <div class="row">
+    <div class="col-12 col-lg-4">
+      <form  id="form-noise" class="row">
+        <div class="form-group col-12">
+          <label for="scale">Draw mode</label>
+          <select class="form-control" name="draw_mode">
+            <option value="biomes">biomes</option>
+            <option value="temperature">temperature</option>
+            <option value="fertility">fertility</option>
+            <option value="terrain">terrain</option>
+            <option value="rivers" selected>rivers</option>
+          </select>
+        </div>
+        <div class="form-group col-12">
+          <label for="scale">Scale</label>
+          <input type="text" class="form-control" name="scale" value="10">
+        </div>
+        <div class="form-group col-4">
+          <label for="show_grid">Show grid</label> 
+           <select class="form-control" name="show_grid">
+            <option value="true">true</option>
+            <option value="false" selected>false</option>
+          </select>
+        </div>
+        
+        <div class="form-group col-4">
+          <label for="show_entities">Show entities</label> 
+           <select class="form-control" name="show_entities">
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </select>
+        </div>
+
+        <div class="form-group col-4">
+          <label for="show_ocean">Show ocean</label> 
+           <select class="form-control" name="show_ocean">
+            <option value="true" selected> true</option>
+            <option value="false" >false</option>
+          </select>
+        </div>
+
+        <!-- chunk x position-->
+        <div class="form-group col-6">
+          <label for="chunk_x">Chunk x</label>
+          <input type="text" class="form-control" name="chunk_x" value="16">
+        </div>
+        <!-- chunk y position-->
+        <div class="form-group col-6">
+          <label for="chunk_y">Chunk y</label>
+          <input type="text" class="form-control" name="chunk_y" value="16">
+        </div>
+        <!-- arrows buttons -->
+        <div class="form-group col-12">
+          <button type="button" class="btn btn-primary" id="btn-left">&lt;</button>
+          <button type="button" class="btn btn-primary" id="btn-right">&gt;</button>
+          <button type="button" class="btn btn-primary" id="btn-up">&uarr;</button>
+          <button type="button" class="btn btn-primary" id="btn-down">&darr;</button>
+        </div>
+        <!--- zoom buttons with fa icons -->
+        <div class="form-group col-12">
+          <button type="button" class="btn btn-primary" id="btn-zoom-in"><i class="fas fa-search-plus"></i></button>
+          <button type="button" class="btn btn-primary" id="btn-zoom-out"><i class="fas fa-search-minus"></i></button>
+        </div>
+        <div class="form-group col-12">
+          <!-- preview button with icon-->
+          <button type="submit" class="btn btn-primary" id="preview">
+            <i class="fas fa-eye"></i>
+            Preview
+          </button>
+        </div>
+      </form>
+
+    </div>
+    <div class="col-12 col-lg-8 text-center">
+      <canvas></canvas>
+    </div>
+  </div>
+</div>
+<script src="mgtow.js"> </script>
+<script>
+  
+  var chunk_size=32;
+var canvas = document.getElementsByTagName('canvas')[0];
+canvas.width = 20*chunk_size;
+canvas.height = 15*chunk_size;
+
+var ctx = canvas.getContext('2d');
+
+var image = ctx.createImageData(canvas.width, canvas.height);
+var data = image.data;
+function draw_pixel(x,y,color){
+  let index = (x + y * canvas.width) * 4;
+  data[index + 0] = color[0];
+  data[index + 1] = color[1];
+  data[index + 2] = color[2];
+  data[index + 3] = 255;
+}
+
+
+var elapsed_time=0;
+
+const roleta=(probabilities)=> {
+  let roleta_size=1.0;
+  let soma=0;
+  for(let i=0;i<probabilities.length;i++) probabilities[i]+=soma;
+  if(soma>1) roleta_size=soma;
+}
+
+const biomes_ids={
+      ice_desert:1,
+      taiga:2,
+      tundra:3,
+      ice_mountains:4,
+      temperate_forest:5,
+      tropical_forest:6,
+      jungle:7,
+      desert:8,
+      savanna:9,
+    };    
+    // [y][x]; y=temperature; 0=very_low 1=low 2=medium 3=high 4=very_high
+    // [y][x]; x=fertility; 0=very_low 1=low 2=medium 3=high 4=very_high
+    const biomes_map=[
+      [1,1,1,4,4], // very low temp, all are ice_desert and ice montains
+      [4,3,2,2,2],  // low temp, ice_montains tundra and taiga
+      [9,3,6,5,7], // medium temp, 
+      [9,9,5,5,7], // high temp, tropical forest,
+      [8,8,8,9,9] // very high temp, all are desert
+    ];
+   
+    const terrain={
+      offset:[3000,3000],
+        scale:32,
+        octaves:5
+    };
+    const rivers = {
+      offset:[-6000,-8000],
+      scale:128,
+      octaves:4,
+      levels:{
+        very_low:0.75,
+        low:0.485,
+        high:0.515,
+        very_high:0.75
+      }
+    };
+    const climate={
+      offset:[-50,-50],
+      scale:2048,
+      octaves:4,
+      levels:{
+        very_low:0.37,
+        low:0.453,
+        high:0.55,
+        very_high:0.62
+      }
+    };
+    const fertility={
+      offset:[2048,1024],
+      flip:true,
+      seed:200,
+      scale:2048,
+      octaves:4,
+      levels:{
+        very_low:0.4,
+        low:0.45,
+        high:0.55,
+        very_high:0.6
+      }
+    };
+    function get_level(value,levels){
+      if(value<=levels.very_low) return 0;
+      if(value<=levels.low) return 1;
+      if(value<=levels.high) return 2;
+      if(value<=levels.very_high) return 3;
+      return 4;
+    }
+    const limits={
+      ocean:0.55,
+      beach:0.563,
+      vegetation:0.57,
+      rock:0.65,
+    }
+    const biomes_info={
+      1:{
+        name:'Ice Desert',
+        id:1,
+        color:[255,255,255],
+        vegetation:{
+          density:[0,0,0,0],
+        }
+      },
+      2:{
+        name:'Taiga (Pine Forest)',
+        id:2,
+        color:[51, 153, 102],
+        has_beach:true,
+        vegetation:{
+          density:[0,0,0,0],
+        }
+      },
+      3:{
+        name:'Tundra',
+        id:3,
+        color:[0, 102, 102],
+        has_beach:true,
+        vegetation:{
+          density:[0,0,0,0],
+        }
+      },
+      4:{
+        name:'Ice Mountains',
+        id:4,
+        color:[235,235,235],
+        vegetation:{
+          density:[0,0,0,0],
+        }
+      },
+      5:{
+        name:'Temperate Forest',
+        id:5,
+        color:[0, 153, 51],
+        has_beach:true,
+        vegetation:{
+          density:[0,0,0,0],
+        }
+      },
+      6:{
+        name:'Tropical Forest',
+        id:6,
+        color:[153, 204, 0],
+        has_beach:true,
+        vegetation:{
+          density:[0,0,0,0],
+        }
+      },
+      7:{
+        name:'Jungle',
+        id:7,
+        color:[0, 51, 0],
+        vegetation:{
+          density:[0,0,0,0],
+        }
+      },
+      8:{
+        name:'Desert',
+        id:8,
+        color:[255, 153, 51],
+        has_beach:true,
+        vegetation:{
+          density:[0,0,0,0],
+        }
+      },
+      9:{
+        name:'Savanna',
+        id:9,
+        color:[153, 153, 0],
+        has_beach:true,
+        vegetation:{
+          density:[0,0,0,0],
+        }
+      }
+    };
+    const water_level=0.55;
+    const land_level=0.57;
+    const rock_level=0.69;
+    const snow_level=0.4;
+    const desert_level=0.63;
+    const river_level=0.098;
+    const jungle_level=0.6;
+    const jungle_max_temp=0.57;
+    const jungle_min_temp=0.43;
+
+    const water_color=[0, 51, 204];
+    const sand_color=[240,230,30];
+
+    const land_color=[0,255,0];
+    const rock_color=[100,100,100];
+    const snow_color=[255,255,255];
+    const jungle_color=[0,100,0];
+    const chunk_separator_color=[20,20,20];
+
+    const get_biome =(biome_id) => biomes_info[biome_id];
+
+  var total_drawed_biomes=0;
+  var drawed_biomes_percentages={};
+  var drawing_biomes_counts={};
+  
+  function log_biomes_percentage() {
+    for(let biome_id in drawed_biomes_percentages) {
+      let biome_name=get_biome(biome_id).name;
+      console.log(biome_name+': '+drawed_biomes_percentages[biome_id]+'%');
+    }
+  }
+  function reset_drawing_biomes() {
+    total_drawed_biomes=0;
+    drawing_biomes_count={};
+  }
+  function save_drawed_biomes_stats() {
+    for(let biome_id in drawing_biomes_count) {
+      drawed_biomes_percentages[biome_id]=Math.round((drawing_biomes_count[biome_id]/total_drawed_biomes)*100);
+    }
+  }
+  function draw_biome(x,y,biome) {
+    total_drawed_biomes++;
+    //drawing_biomes_count[biome.id]++;
+    if(!drawing_biomes_count[biome.id]) {
+      drawing_biomes_count[biome.id]=1;
+    } else {
+      drawing_biomes_count[biome.id]++;
+    }
+    draw_pixel(x,y,biome.color);
+  }
+
+  function draw(params) {
+    reset_drawing_biomes();
+    /* ENTITIES */
+
+    const entities={ stone:1, grass:2 };
+    const stone_probability=0.01; // 1/100
+
+    const stone_color=[150,150,150];
+    const lerp = (start, end, amt)=> (1-amt)*start+amt*end;
+    let x, y,pixels=0;
+    for (y = 0; y < canvas.height; y++) {
+      for (x = 0; x < canvas.width; x++) {
+        pixels++;
+        let world_x=Math.floor(x*params.scale)+params.chunk_x*chunk_size;
+        let world_y=Math.floor(y*params.scale)+params.chunk_y*chunk_size;
+        
+        let riv=pnoise(world_x,world_y,elapsed_time,rivers);
+        if(riv>rivers.levels.low && riv<rivers.levels.high) {
+          let mid=lerp(rivers.levels.low,rivers.levels.high,0.5);
+          riv=1-(Math.abs(mid-riv)/((rivers.levels.high-rivers.levels.low)/2));
+        } else {
+          riv=0;
+        }
+
+        let color=[0,0,0];
+        let h=pnoise(world_x,world_y,elapsed_time,terrain);  
+        h=h-((riv)*river_level);
+        
+        if(h<limits.ocean && params.show_ocean){
+          color=water_color;
+        }
+        if(params.draw_mode=='terrain') {
+          let c=h*255;
+          if(params.show_ocean) {
+            c=((h-limits.ocean)/(1.0-limits.ocean))*255;
+          } 
+          draw_pixel(x,y,[c,c,c]);
+          continue;
+        }
+        if(params.draw_mode=='rivers') {
+          let c=riv*255;
+          draw_pixel(x,y,[c,c,c]);
+          continue;
+        } 
+        let temp=pnoise(world_x,world_y,elapsed_time,climate);   
+        if(params.draw_mode=='temperature') {
+          /*
+          let c=(temp-0.5)*2;
+          let b=(temp*3)/1.5;
+          let g=(Math.abs(temp*3)-1.5)/1.5;
+          let r=1-Math.max(temp*3,1);
+          */
+          let r=temp;
+          draw_pixel(x,y,[r*255,r*255,r*255]);
+          continue;
+        }
+        let f=pnoise(world_x,world_y,elapsed_time,fertility);
+        if(params.draw_mode=='fertility') {
+          let c=f*255;
+          draw_pixel(x,y,[c,c,c]);
+          continue;
+        }
+        // 0 = very_low 1 = low 2 = medium 3 = high 4 = very_high
+        const temp_level=get_level(temp,climate.levels);
+        const fertility_level=get_level(f,fertility.levels);
+        const biome_id=biomes_map[temp_level][fertility_level];
+
+        if(h<water_level && params.show_ocean ) {
+          draw_pixel(x,y,water_color);
+          continue;
+        }
+        let biome=get_biome(biome_id);
+        if(biome.has_beach && params.show_ocean ) {
+          if(h<limits.beach) {
+            draw_pixel(x,y,sand_color);
+            continue;
+          }
+        }
+        draw_biome(x,y,biome);
+      }
+    }
+    save_drawed_biomes_stats();
+    ctx.putImageData(image, 0, 0);
+  }
+
+var changed=false;
+$(document).ready(function() {
+  const scale=()=>Math.ceil(parseFloat($('input[name=scale]').val()));
+  // arrow button events
+  $("input,select").change(function() {
+    changed=true;
+  });
+  $('#btn-left').click(function() {
+    $('input[name=chunk_x]').val(parseInt($('input[name=chunk_x]').val())-scale());
+    $('input[name=chunk_y]').val(parseInt($('input[name=chunk_y]').val()));
+    changed=true;
+  });
+  $('#btn-right').click(function() {
+    $('input[name=chunk_x]').val(parseInt($('input[name=chunk_x]').val())+scale());
+    $('input[name=chunk_y]').val(parseInt($('input[name=chunk_y]').val()));
+    changed=true;
+  });
+  $('#btn-up').click(function() {
+    $('input[name=chunk_x]').val(parseInt($('input[name=chunk_x]').val()));
+    $('input[name=chunk_y]').val(parseInt($('input[name=chunk_y]').val())-scale());
+    changed=true;
+  });
+  $('#btn-down').click(function() {
+    $('input[name=chunk_x]').val(parseInt($('input[name=chunk_x]').val()));
+    $('input[name=chunk_y]').val(parseInt($('input[name=chunk_y]').val())+scale());
+    changed=true;
+  });
+  // zoom buttons
+  $('#btn-zoom-in').click(function() {
+    $('input[name=scale]').val(parseFloat($('input[name=scale]').val())*0.5);
+    changed=true;
+  });
+  $('#btn-zoom-out').click(function() {
+    $('input[name=scale]').val(parseFloat($('input[name=scale]').val())*2);
+    changed=true;
+  });
+
+  setInterval(function() {
+    if(changed) {
+      $('#form-noise').submit();
+      changed=false;
+    }
+  }, 200);
+
+ /* setInterval(function(){
+    //elapsed_time=elapsed_time+50;
+    $("#form-noise").submit();
+  },500);*/
+
+
+  $("#form-noise").submit(function(e) {
+    e.preventDefault();
+    let formdata = $(this).serializeArray();
+    let data = {};
+    $(formdata).each(function(index, obj){
+        if(obj.value==='true' || obj.value==='false') obj.value=obj.value==='true';
+        data[obj.name] = obj.value;
+    });
+    draw(data);
+  }).submit();
+
+});
+</script>
+<div class="position-fixed" style="bottom:0px">
+  <!--- collapsable div with button-->
+  <div class="collapse bg-dark text-white p-3" id="collapse-nav">
+   <!-- table with all biomes and colors -->
+    <table>
+      <tr>
+        <th>Biome</th>
+        <th>Color</th>
+      </tr>
+      <tr>
+        <td>ice desert</td>
+        <td style="background-color:rgb(255,255,255)"></td>
+        
+      </tr>
+      <tr>
+        <td>Ocean</td>
+        <td>
+          <div style="background-color: rgb(0, 51, 204); width: 100px; height: 20px;"></div>
+        </td>
+
+      </tr>
+      <tr>
+        <td>Tundra</td>
+        <td>
+          <div style="background-color: rgb(0, 102, 102); width: 100px; height: 20px;"></div>
+        </td>
+
+      </tr>
+      <!-- taiga -->
+      <tr>
+        <td>Taiga</td>
+        <td>
+          <div style="background-color: rgb(51, 153, 102); width: 100px; height: 20px;"></div>
+        </td>
+
+      <tr>
+        <td>Ice Mountains</td>
+        <td>
+          <div style="background-color: rgb(235, 235, 235); width: 100px; height: 20px;"></div>
+        </td>
+      </tr>
+      <tr>
+        <td>Temperate Forest</td>
+        <td>
+          <div style="background-color: rgb(0, 153, 51); width: 100px; height: 20px;"></div>
+        </td>
+      </tr>
+      <tr>
+        <td>Tropical Forest</td>
+        <td>
+          <div style="background-color: rgb(153, 204, 0); width: 100px; height: 20px;"></div>
+        </td>
+      </tr>
+      <tr>
+        <td>Jungle</td>
+        <td>
+          <div style="background-color: rgb(0, 51, 0); width: 100px; height: 20px;"></div>
+        </td>
+      </tr>
+      <tr>
+        <td>Desert</td>
+        <td>
+          <div style="background-color: rgb(255, 153, 51); width: 100px; height: 20px;"></div>
+        </td>
+      </tr>
+      <tr>
+        <td>Savanna</td>
+        <td>
+          <div style="background-color: rgb(153, 153, 0); width: 100px; height: 20px;"></div>
+        </td>
+      </tr>
+    </table>
+
+  </div>
+  <button class="btn btn-primary" data-toggle="collapse" data-target="#collapse-nav" aria-expanded="false" aria-controls="collapse-nav">
+    <span class="oi oi-menu">
+      <i class="fa fa-eye"></i>
+      view biomes colors
+    </span>
+  </button>
+</div>

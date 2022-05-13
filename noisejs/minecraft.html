@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<head>
+  <title>Perlin noise</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- bootstrap 4 stuff-->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <!-- jquery not slim-->
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <!-- bootstrap 4 stuff-->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <!-- noisejs-->
+  <script src='perlin.js'></script>
+  <script src='noisex.js'></script>
+</head>
+<div class="container py-3">
+  <h1 class="w-100 text-center">
+    Perlin noise demo5
+  </h1>
+  <div class="row">
+    <div class="col-12 col-lg-4">
+      <form  id="form-noise" class="row">
+        <div class="form-group col-12">
+          <label for="scale">Scale</label>
+          <input type="text" class="form-control" name="scale" value="0.5">
+        </div>
+        <!-- show_grid checkbox-->
+        <div class="form-group col-12">
+          <label for="show_grid">Show grid</label>
+          <input type="checkbox" class="form-control" name="show_grid"  >
+        </div>
+        <!-- chunk x position-->
+        <div class="form-group col-6">
+          <label for="chunk_x">Chunk x</label>
+          <input type="text" class="form-control" name="chunk_x" value="16">
+        </div>
+        <!-- chunk y position-->
+        <div class="form-group col-6">
+          <label for="chunk_y">Chunk y</label>
+          <input type="text" class="form-control" name="chunk_y" value="16">
+        </div>
+        <!-- arrows buttons -->
+        <div class="form-group col-12">
+          <button type="button" class="btn btn-primary" id="btn-left">&lt;</button>
+          <button type="button" class="btn btn-primary" id="btn-right">&gt;</button>
+          <button type="button" class="btn btn-primary" id="btn-up">&uarr;</button>
+          <button type="button" class="btn btn-primary" id="btn-down">&darr;</button>
+        </div>
+        <!--- zoom buttons with fa icons -->
+        <div class="form-group col-12">
+          <button type="button" class="btn btn-primary" id="btn-zoom-in"><i class="fas fa-search-plus"></i></button>
+          <button type="button" class="btn btn-primary" id="btn-zoom-out"><i class="fas fa-search-minus"></i></button>
+        </div>
+        <div class="form-group col-12">
+          <!-- preview button with icon-->
+          <button type="submit" class="btn btn-primary" id="preview">
+            <i class="fas fa-eye"></i>
+            Preview
+          </button>
+        </div>
+      </form>
+
+    </div>
+    <div class="col-12 col-lg-8 text-center">
+      <canvas></canvas>
+    </div>
+  </div>
+</div>
+<script src="mgtow.js"> </script>
+<script>
+  
+  var chunk_size=32;
+var canvas = document.getElementsByTagName('canvas')[0];
+canvas.width = 20*chunk_size;
+canvas.height = 15*chunk_size;
+
+var ctx = canvas.getContext('2d');
+
+var image = ctx.createImageData(canvas.width, canvas.height);
+var data = image.data;
+var elapsed_time=0;
+var srng=function mulberry32(a) {
+    return function() {
+      var t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+};
+var changed=false;
+$(document).ready(function() {
+  const scale=()=>Math.ceil(parseFloat($('input[name=scale]').val()));
+  // arrow button events
+  $('#btn-left').click(function() {
+    $('input[name=chunk_x]').val(parseInt($('input[name=chunk_x]').val())-scale());
+    $('input[name=chunk_y]').val(parseInt($('input[name=chunk_y]').val()));
+    changed=true;
+  });
+  $('#btn-right').click(function() {
+    $('input[name=chunk_x]').val(parseInt($('input[name=chunk_x]').val())+scale());
+    $('input[name=chunk_y]').val(parseInt($('input[name=chunk_y]').val()));
+    $('#form-noise').submit();
+  });
+  $('#btn-up').click(function() {
+    $('input[name=chunk_x]').val(parseInt($('input[name=chunk_x]').val()));
+    $('input[name=chunk_y]').val(parseInt($('input[name=chunk_y]').val())-scale());
+    changed=true;
+  });
+  $('#btn-down').click(function() {
+    $('input[name=chunk_x]').val(parseInt($('input[name=chunk_x]').val()));
+    $('input[name=chunk_y]').val(parseInt($('input[name=chunk_y]').val())+scale());
+    changed=true;
+  });
+  // zoom buttons
+  $('#btn-zoom-in').click(function() {
+    $('input[name=scale]').val(parseFloat($('input[name=scale]').val())*0.5);
+    changed=true;
+  });
+  $('#btn-zoom-out').click(function() {
+    $('input[name=scale]').val(parseFloat($('input[name=scale]').val())*2);
+    changed=true;
+  });
+  // show grid
+  $('input[name=show_grid]').change(function() {
+    changed=true;
+  });
+
+  setInterval(function() {
+    if(changed) {
+      $('#form-noise').submit();
+      changed=false;
+    }
+  }, 200);
+
+
+    const biomes={
+      desert:1,
+      snow:2,
+      forest:3,
+      jungle:4,
+    };
+ /* setInterval(function(){
+    //elapsed_time=elapsed_time+50;
+    $("#form-noise").submit();
+  },500);*/
+
+  function draw(params) {
+
+    const terrain={
+        scale:32,
+        octaves:5
+    };
+    const climate={
+        scale:2048,
+        octaves:3
+    };
+    const soil_quality={
+        scale:1024,
+        octaves:4
+    };
+
+
+    const water_level=0.55;
+    const land_level=0.57;
+    const rock_level=0.69;
+    const snow_level=0.4;
+    const desert_level=0.63;
+    
+    const jungle_level=0.6;
+    const jungle_max_temp=0.57;
+    const jungle_min_temp=0.43;
+
+    const water_color=[40,40,220];
+    const sand_color=[240,230,30];
+    const land_color=[0,255,0];
+    const rock_color=[100,100,100];
+    const snow_color=[255,255,255];
+    const jungle_color=[0,100,0];
+    const chunk_separator_color=[20,20,20];
+
+    /* ENTITIES */
+
+    const entities={
+      stone:1,
+      grass:2,
+    };
+    const stone_probability=0.01; // 1/100
+
+    const stone_color=[150,150,150];
+
+    let x, y;
+    for (y = 0; y < canvas.height; y++) {
+      for (x = 0; x < canvas.width; x++) {
+        let world_x=Math.floor(x*params.scale)+params.chunk_x*chunk_size;
+        let world_y=Math.floor(y*params.scale)+params.chunk_y*chunk_size;
+
+        let color=[0,0,0];
+        let h=pnoise(world_x,world_y,elapsed_time,terrain);       
+        let temp=pnoise(world_x,world_y,elapsed_time,climate);   
+        let soil=pnoise(world_x,world_y,elapsed_time,soil_quality);
+
+        let biome=biomes.forest;
+
+        if(temp<snow_level){
+          biome=biomes.snow;
+        }else
+        if(temp>desert_level){
+          biome=biomes.desert;
+        }
+        if(temp>jungle_min_temp && temp<jungle_max_temp && soil>jungle_level){
+          biome=biomes.jungle;
+        }
+
+        if(h<water_level){
+          color=water_color;
+        }else if(h<land_level){
+          color=sand_color;
+        }else if(h<rock_level){ 
+          color=land_color;
+        } else {
+          color=rock_color;
+        }
+        if(h>land_level){
+          if(biome==biomes.snow){
+            color=snow_color;
+          }
+          if(biome==biomes.desert){
+            color=sand_color;
+          }
+          if(biome==biomes.jungle){
+            color=jungle_color;
+          }
+        }
+        let pxrand=srng(world_x*world_y);
+
+        // land entities
+        if(h>water_level) {
+          if((pxrand()>soil) && pxrand()<stone_probability){
+            color=stone_color;
+          }
+        }
+        if((world_x%32==0 || world_y%32==0) && params.show_grid){
+          color=chunk_separator_color;
+        }
+        
+       
+       let index = (x + y * canvas.width) * 4;
+
+        data[index + 0] = color[0];
+        data[index + 1] = color[1];
+        data[index + 2] = color[2];
+        data[index + 3] = 255;
+      }
+    }
+    ctx.putImageData(image, 0, 0);
+  }
+  $("#form-noise").submit(function(e) {
+    e.preventDefault();
+    let formdata = $(this).serializeArray();
+    let data = {};
+    $(formdata).each(function(index, obj){
+        data[obj.name] = obj.value;
+    });
+    draw(data);
+  }).submit();
+
+});
+</script>

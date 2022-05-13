@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<head>
+  <title>Perlin noise</title>
+  <!-- bootstrap 4 stuff-->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <!-- jquery not slim-->
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <!-- bootstrap 4 stuff-->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <!-- noisejs-->
+  <script src='perlin-original.js'></script>
+  <script src='noisex.js'></script>
+</head>
+<div class="container py-3">
+  <h1 class="w-100 text-center">
+    Perlin noise demo5
+  </h1>
+  <div class="row">
+    <div class="col-12 col-lg-4">
+      <form  id="form-noise" class="row">
+        <div class="form-group col-12">
+          <label for="scale">Scale</label>
+          <input type="text" class="form-control" name="scale" value="20">
+        </div>
+        <div class="form-group col-6">
+          <label for="scale">Low Bias</label>
+          <input type="text" class="form-control" name="low_bias" value="0">
+        </div>
+        <div class="form-group col-6">
+          <label for="scale">High Bias</label>
+          <input type="text" class="form-control" name="high_bias" value="1">
+        </div>
+        <!-- octaves -->
+        <div class="form-group col-12">
+          <label for="octaves">Octaves</label>
+          <input type="text" class="form-control" name="octaves" value="1">
+        </div>
+        <div class="form-group col-12">
+          <!-- preview button with icon-->
+          <button type="submit" class="btn btn-primary" id="preview">
+            <i class="fas fa-eye"></i>
+            Preview
+          </button>
+        </div>
+      </form>
+
+    </div>
+    <div class="col-12 col-lg-8 text-center">
+      <canvas></canvas>
+    </div>
+  </div>
+</div>
+<script src="mgtow.js"> </script>
+<script>
+var canvas = document.getElementsByTagName('canvas')[0];
+canvas.width = 640;
+canvas.height = 480;
+
+var ctx = canvas.getContext('2d');
+
+var image = ctx.createImageData(canvas.width, canvas.height);
+var data = image.data;
+
+$(document).ready(function() {
+
+
+  function draw(params) {
+    console.log(params);
+
+    var x, y;
+    for (y = 0; y < canvas.height; y++) {
+      for (x = 0; x < canvas.width; x++) {
+        let h=pnoise(x,y,0,params);       
+
+        var value = h*255;
+       
+        var index = (x + y * canvas.width) * 4;
+        data[index + 0] = value;
+        data[index + 1] = value;
+        data[index + 2] = value;
+        data[index + 3] = 255;
+  
+      }
+    }
+    ctx.putImageData(image, 0, 0);
+  }
+  $("#form-noise").submit(function(e) {
+    e.preventDefault();
+    let formdata = $(this).serializeArray();
+    let data = {};
+    $(formdata).each(function(index, obj){
+        data[obj.name] = obj.value;
+    });
+    draw(data);
+  }).submit();
+
+});
+</script>

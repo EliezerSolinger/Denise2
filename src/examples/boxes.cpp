@@ -1,22 +1,28 @@
 
 #define GLFW_INCLUDE_NONE
+
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 #include <cstdlib>
 #include <cstdio>
+
 #include "dmath.hpp"
 #include "dsystem.hpp"
-#include "denise.hpp"
+#include "mesh_renderer.hpp"
 
 #include "FPSCamera.cpp"
-//#include "denise.hpp"
+
+//#include "mesh_renderer.hpp"
 
 using namespace DMath;
 using namespace DSystem;
-using namespace Denise;
-int main() {
-    DSystem::init("Denise2 Demo - BOXES");
-    Denise::init();
+using namespace MeshRenderer;
+
+
+int main (int argc, char *argv[]) {  
+    printf("main fun called..\n");
+    DSystem::init("MeshRenderer2 Demo - BOXES");
+    MeshRenderer::init();
     Camera camera=Camera();
     camera.setup2D();
     VBO box=vbo_box();
@@ -25,17 +31,18 @@ int main() {
     while(update()) {
         //camera.draw_viewport();
         FPSCamera::update();
-        if(Input::pressing(GLFW_KEY_ESCAPE)) break;
+        if(Input::pressing(Input::BACK)) break;
        // printf("%f \n",Time::elapsed());
-        material.diffuse=Color::CYAN();
+        material.diffuse_color=Color::CYAN();
         draw(box,Mat4().translated(0,-2,0),    FPSCamera::camera,material);
-        material.diffuse=Color::BLACK();
+        material.diffuse_color=Color::BLACK();
         draw(box,Mat4().translated(0,2,0),     FPSCamera::camera,material);
-        material.diffuse=Color::WHITE();
+        material.diffuse_color=Color::WHITE();
         draw(box,Mat4().translated(0,4,0),     FPSCamera::camera,material);
-        material.diffuse=Color::RED();
+        material.diffuse_color=Color::RED();
         draw(box,Mat4().translated(0,0,0),    FPSCamera::camera,material);
         // printf("%f\n",delta());
     }
     destroy();
+    return 0;
 }

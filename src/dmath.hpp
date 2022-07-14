@@ -3,6 +3,9 @@
 
 #include <math.h> /* sqrt() */
 
+#define DMIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+#define DMAX(X, Y) (((X) > (Y)) ? (X) : (Y))
+
 namespace DMath {
 
     const float PI = 3.14159265358979323846;
@@ -23,7 +26,15 @@ namespace DMath {
     static inline float min(float a, float b) { return a < b ? a : b; }
     static inline float max(float a, float b) { return a > b ? a : b; }
     static inline float sign(float x) { return x < 0 ? -1 : 1; }
-
+    static inline uint8_t float_to_byte(float f) {return (uint8_t)(DMath::clamp(f,0.0f,1.0f)*255.0);}
+    static inline float byte_to_float(uint8_t b) { return b/255.0f; }
+    static inline int lcm(int a,int b) {
+        for(int i=2;i<=DMIN(a,b);i++)  {
+            if((a % i == 0) && (b%i == 0))
+            return i;
+        }
+        return 1;
+    }
     /** EXPERIMENTAL THIS MAY NOT WORK PROPERLY*/
     static inline float cos_from_sin(float sin, float angle) { 
         float cos=sqrt(1-sin*sin);
@@ -44,48 +55,64 @@ namespace DMath {
         Vec3 operator-(const Vec3& v) const { return Vec3(x - v.x, y - v.y, z - v.z); }
         Vec3 operator*(const Vec3& v) const { return Vec3(x * v.x, y * v.y, z * v.z); }
         Vec3 operator/(const Vec3& v) const { return Vec3(x / v.x, y / v.y, z / v.z); }
-        Vec3 operator+=(Vec3 v) {
-            this->x += v.x; this->y += v.y; this->z += v.z;
-             return *this;
-        }
-        Vec3 operator-=(Vec3 v) {
-            this->x -= v.x; this->y -= v.y; this->z -= v.z;
-             return *this;
-        }
+        Vec3 operator+=(const Vec3 v) { this->x+=v.x; this->y+=v.y; this->z+=v.z; return *this; }
+        Vec3 operator-=(const Vec3 v) { this->x-= v.x; this->y-= v.y; this->z-= v.z; return *this; }
+        Vec3 operator*=(const Vec3 v) { this->x*= v.x; this->y*= v.y; this->z*= v.z; return *this; }
+        Vec3 operator/=(const Vec3 v) { this->x/= v.x; this->y/= v.y; this->z/= v.z; return *this; }
+        Vec3 operator-() const { return Vec3(-x, -y, -z); }
         Vec3 operator+(float s) const { return Vec3(x + s, y + s, z + s); }
         Vec3 operator-(float s) const { return Vec3(x - s, y - s, z - s); }
         Vec3 operator*(float s) const { return Vec3(x * s, y * s, z * s); }
         Vec3 operator/(float s) const { return Vec3(x / s, y / s, z / s); }
-        Vec3 operator-() const { return Vec3(-x, -y, -z); }
-        Vec3 operator+=(float s)  {
-            this->x += s; this->y += s; this->z += s;
-             return *this;
-        }
-        Vec3 operator-=(float s)  {
-            this->x -= s; this->y -= s; this->z -= s;
-             return *this;
-        }
-        
+        Vec3 operator+=(float s)  { this->x+=s; this->y+=s; this->z+=s; return *this; }
+        Vec3 operator-=(float s)  { this->x-=s; this->y-=s; this->z-=s; return *this;}
+        Vec3 operator*=(float s)  { this->x*=s; this->y*=s; this->z*=s; return *this; }
+        Vec3 operator/=(float s)  { this->x/=s; this->y/=s; this->z/=s; return *this; }
+        Vec3 operator+(double s) const { return Vec3(x + s, y + s, z + s); }
+        Vec3 operator-(double s) const { return Vec3(x - s, y - s, z - s); }
+        Vec3 operator*(double s) const { return Vec3(x * s, y * s, z * s); }
+        Vec3 operator/(double s) const { return Vec3(x / s, y / s, z / s); }
+        Vec3 operator+=(double s)  { this->x+=s; this->y+=s; this->z+=s; return *this; }
+        Vec3 operator-=(double s)  { this->x-=s; this->y-=s; this->z-=s; return *this;}
+        Vec3 operator*=(double s)  { this->x*=s; this->y*=s; this->z*=s; return *this; }
+        Vec3 operator/=(double s)  { this->x/=s; this->y/=s; this->z/=s; return *this; }
+        Vec3 operator+(int s) const { return Vec3(x + s, y + s, z + s); }
+        Vec3 operator-(int s) const { return Vec3(x - s, y - s, z - s); }
+        Vec3 operator*(int s) const { return Vec3(x * s, y * s, z * s); }
+        Vec3 operator/(int s) const { return Vec3(x / s, y / s, z / s); }
+        Vec3 operator+=(int s)  { this->x+=s; this->y+=s; this->z+=s; return *this; }
+        Vec3 operator-=(int s)  { this->x-=s; this->y-=s; this->z-=s; return *this;}
+        Vec3 operator*=(int s)  { this->x*=s; this->y*=s; this->z*=s; return *this; }
+        Vec3 operator/=(int s)  { this->x/=s; this->y/=s; this->z/=s; return *this; }
+
+        bool operator==(const Vec3& v) const { return float_equals(x, v.x) && float_equals(y, v.y) && float_equals(z, v.z); }
+        bool operator!=(const Vec3& v) const { return !float_equals(x, v.x) || !float_equals(y, v.y) || !float_equals(z, v.z); }
 
         inline Vec3 inverse() const { return Vec3(-x, -y, -z); }
         inline float dot() const { return x * x + y * y + z * z; }
         inline float dot(Vec3 v) const { return x * v.x + y * v.y + z * v.z; }
         inline float length() const { return sqrt(dot()); }
         inline float magnitude() const { return length(); }
-        inline Vec3 normalize() const { return *this / magnitude(); }
-        inline Vec3 cross(Vec3 v) const { return Vec3(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x); }
-        
+        inline Vec3 normalized() const { return *this / magnitude(); } 
+        inline Vec3 abs() const { return Vec3(DMath::abs(x), DMath::abs(y), DMath::abs(z)); }
+        static inline Vec3 cross(Vec3 a,Vec3 b ) {
+            return Vec3(
+                a.y * b.z - a.z * b.y, 
+                a.z * b.x - a.x * b.z,
+                a.x * b.y - a.y * b.x);
+        }
         static inline Vec3 ZERO() { return Vec3(0, 0, 0); }
         static inline Vec3 UNIT() { return Vec3(1, 1, 1); }
         static inline Vec3 X() { return Vec3(1, 0, 0); }
-        static inline Vec3 Y() { return Vec3(0, 1, 0); }
-        static inline Vec3 Z() { return Vec3(0, 0, 1); }
-        static inline Vec3 UP() { return Vec3(0, 1, 0); }
-        static inline Vec3 DOWN() { return Vec3(0, -1, 0); }
-        static inline Vec3 LEFT() { return Vec3(-1, 0, 0); }
-        static inline Vec3 RIGHT() { return Vec3(1, 0, 0); }
+        static inline Vec3 Y()       { return Vec3(0, 1, 0); }
+        static inline Vec3 Z()       { return Vec3(0, 0, 1); }
+        static inline Vec3 UP()      { return Vec3(0, 1, 0); }
+        static inline Vec3 DOWN()    { return Vec3(0, -1, 0); }
+        static inline Vec3 LEFT()    { return Vec3(-1, 0, 0); }
+        static inline Vec3 RIGHT()   { return Vec3(1, 0, 0); }
         static inline Vec3 FORWARD() { return Vec3(0, 0, 1); }
-        static inline Vec3 BACK() { return Vec3(0, 0, -1); }
+        static inline Vec3 BACK()    { return Vec3(0, 0, -1); }
+        static inline float distance(Vec3 a,Vec3 b) { return (a-b).magnitude(); }
     };
 
 
@@ -99,48 +126,66 @@ namespace DMath {
         Vec2 operator-(const Vec2& v) const { return Vec2(x - v.x, y - v.y); }
         Vec2 operator*(const Vec2& v) const { return Vec2(x * v.x, y * v.y); }
         Vec2 operator/(const Vec2& v) const { return Vec2(x / v.x, y / v.y); }
+        Vec2 operator+=(const Vec2 v) { this->x+=v.x; this->y+=v.y; return *this; }
+        Vec2 operator-=(const Vec2 v) { this->x-= v.x; this->y-= v.y; return *this; }
+        Vec2 operator*=(const Vec2 v) { this->x*= v.x; this->y*= v.y; return *this; }
+        Vec2 operator/=(const Vec2 v) { this->x/= v.x; this->y/= v.y; return *this; }
         Vec2 operator+(float s) const { return Vec2(x + s, y + s); }
         Vec2 operator-(float s) const { return Vec2(x - s, y - s); }
         Vec2 operator*(float s) const { return Vec2(x * s, y * s); }
         Vec2 operator/(float s) const { return Vec2(x / s, y / s); }
+        Vec2 operator+=(float s) { this->x+=s; this->y+=s; return *this; }
+        Vec2 operator-=(float s) { this->x-=s; this->y-=s; return *this; }
+        Vec2 operator*=(float s) { this->x*=s; this->y*=s; return *this; }
+        Vec2 operator/=(float s) { this->x/=s; this->y/=s; return *this; }
+        Vec2 operator-() const { return Vec2(-x, -y); }
+        
 
         inline Vec2 inverse() const { return Vec2(-x, -y); }
         inline float dot() const { return x * x + y * y; }
         inline float length() const { return sqrt(dot()); }
         inline float magnitude() const { return length(); }
         inline Vec2 normalize() const { return *this / magnitude(); }
+        inline Vec3 to_vec3(float z=0) const { return Vec3(x, y, z); }
+        inline Vec2 abs() const { return Vec2(DMath::abs(x), DMath::abs(y)); }
 
         static inline Vec2 ZERO() { return Vec2(0, 0); }
         static inline Vec2 UNIT() { return Vec2(1, 1); }
-        static inline Vec2 X() { return Vec2(1, 0); }
-        static inline Vec2 Y() { return Vec2(0, 1); }
-        static inline Vec2 UP() { return Vec2(0, 1); }
+        static inline Vec2 X()    { return Vec2(1, 0); }
+        static inline Vec2 Y()    { return Vec2(0, 1); }
+        static inline Vec2 UP()   { return Vec2(0, 1); }
         static inline Vec2 DOWN() { return Vec2(0, -1); }
         static inline Vec2 LEFT() { return Vec2(-1, 0); }
-        static inline Vec2 RIGHT() { return Vec2(1, 0); }
-        
+        static inline Vec2 RIGHT(){ return Vec2(1, 0); } 
     };
-
+    struct RGBAComponents { uint8_t r,g,b,a; };
     class Color {
         public: float r,g,b,a;
         Color() { r = g = b = a = 1; }
-        Color(float red, float green, float blue, float alpha) { r = red; g = green; b = blue; a = alpha; }
-        static inline Color WHITE() { return Color(1,1,1,1); }
-        static inline Color BLACK() { return Color(0,0,0,1); }
-        static inline Color RED() { return Color(1,0,0,1); }
-        static inline Color GREEN() { return Color(0,1,0,1); }
-        static inline Color BLUE() { return Color(0,0,1,1); }
-        static inline Color YELLOW() { return Color(1,1,0,1); }
-        static inline Color CYAN() { return Color(0,1,1,1); }
-        static inline Color MAGENTA() { return Color(1,0,1,1); }
-        static inline Color GRAY() { return Color(0.5,0.5,0.5,1); }
-        static inline Color LIGHT_GRAY() { return Color(0.75,0.75,0.75,1); }
+        Color(float red, float green, float blue, float alpha=1.0) { r = red; g = green; b = blue; a = alpha; }
+        
+        inline RGBAComponents to_bytes() {
+            return {float_to_byte(r),float_to_byte(g),float_to_byte(b),float_to_byte(a)};
+        } 
+        static inline Color FROM_BYTE_COMPONENTS(uint8_t r=255,uint8_t g=255,uint8_t b=255, uint8_t a=255) {
+            return Color(byte_to_float(r),byte_to_float(g),byte_to_float(b),byte_to_float(a));
+        }
+        static inline Color WHITE()     { return Color(1,1,1,1); }
+        static inline Color BLACK()     { return Color(0,0,0,1); }
+        static inline Color RED()       { return Color(1,0,0,1); }
+        static inline Color GREEN()     { return Color(0,1,0,1); }
+        static inline Color BLUE()      { return Color(0,0,1,1); }
+        static inline Color YELLOW()    { return Color(1,1,0,1); }
+        static inline Color CYAN()      { return Color(0,1,1,1); }
+        static inline Color MAGENTA()   { return Color(1,0,1,1); }
+        static inline Color GRAY()      { return Color(0.5,0.5,0.5,1); }
+        static inline Color LIGHT_GRAY(){ return Color(0.75,0.75,0.75,1); }
         static inline Color DARK_GRAY() { return Color(0.25,0.25,0.25,1); }
-        static inline Color ORANGE() { return Color(1,0.5,0,1); }
-        static inline Color PURPLE() { return Color(0.5,0,0.5,1); }
-        static inline Color PINK() { return Color(1,0.75,0.75,1); }
-        static inline Color BROWN() { return Color(0.5,0.25,0,1); }
-        static inline Color LIME() { return Color(0,1,0,1); }
+        static inline Color ORANGE()    { return Color(1,0.5,0,1); }
+        static inline Color PURPLE()    { return Color(0.5,0,0.5,1); }
+        static inline Color PINK()      { return Color(1,0.75,0.75,1); }
+        static inline Color BROWN()     { return Color(0.5,0.25,0,1); }
+        static inline Color LIME()      { return Color(0,1,0,1); }
     };
     class Mat4 {
         public: float m[4][4];
@@ -173,7 +218,7 @@ namespace DMath {
                         0, 0, 0, 0);
         }
         
-        static inline Mat4 mul(Mat4 m1, Mat4 m2) {
+        static inline Mat4 mul(const Mat4& m1, Mat4 m2) {
             return Mat4(
                 m2.m[0][0] * m1.m[0][0] + m2.m[0][1] * m1.m[1][0] + m2.m[0][2] * m1.m[2][0] + m2.m[0][3] * m1.m[3][0] , 
                 m2.m[0][0] * m1.m[0][1] + m2.m[0][1] * m1.m[1][1] + m2.m[0][2] * m1.m[2][1] + m2.m[0][3] * m1.m[3][1] , 
@@ -195,7 +240,8 @@ namespace DMath {
                 m2.m[3][0] * m1.m[0][2] + m2.m[3][1] * m1.m[1][2] + m2.m[3][2] * m1.m[2][2] + m2.m[3][3] * m1.m[3][2] , 
                 m2.m[3][0] * m1.m[0][3] + m2.m[3][1] * m1.m[1][3] + m2.m[3][2] * m1.m[2][3] + m2.m[3][3] * m1.m[3][3] 
             );
-        }
+        } 
+
         static inline Mat4 rotation(Vec3 angle) {
             Mat4 mat=Mat4::IDENTITY();
             float sinX = sinf(angle.x);
@@ -302,9 +348,9 @@ namespace DMath {
             );
         }
         static inline Mat4 lookAt(Vec3 eye, Vec3 center, Vec3 up) {
-            Vec3 f = (center - eye).normalize();
-            Vec3 s = f.cross(up).normalize();
-            Vec3 u = s.cross(f);
+            Vec3 f = (center - eye).normalized();
+            Vec3 s = Vec3::cross(f,up).normalized();
+            Vec3 u = Vec3::cross(s,f);
             return Mat4(
                 s.x, u.x, -f.x, 0,
                 s.y, u.y, -f.y, 0,
@@ -346,7 +392,13 @@ namespace DMath {
         inline Mat4 rotated(float s) const {return rotated(0,0,s);}
         inline Vec3 translation() const {return Vec3(m[3][0], m[3][1], m[3][2]);}
         inline Vec2 translation2D() const {return Vec2(m[3][0], m[3][1]);}
-        
+        inline Vec3 axis() const {return Vec3(m[0][0], m[1][0], m[2][0]);}
+        inline Vec3 scale() const {return Vec3(m[0][0], m[1][1], m[2][2]);}
+
+
+        Mat4 operator*(const Mat4& m) const { return Mat4::mul(*this,m); }
+        Vec3 operator*(const Vec3& v) const { return (*this*IDENTITY().translated(v)).translation(); }
+       
         /*inline Mat4 mul(const Mat4& m) const {
             return mul(*this, m);
         }*/
@@ -360,7 +412,7 @@ namespace DMath {
             angles=Vec3(0,0,0);
         }
         inline Mat4 matrix() {
-            return Mat4().scaled(size).rotated(angles).translated(-pos.x,-pos.y,pos.z);
+            return Mat4().scaled(size).rotated(angles).translated(pos.x,pos.y,pos.z);
         }
         inline Mat4 view_matrix() {
             return Mat4().translated(pos);//.rotated(angles).scaled(size);
@@ -374,6 +426,104 @@ namespace DMath {
             size=Vec2(1,1);
         }
     };
+    /** bounding box NOT TESTED */
+    class BoundRect {
+        public:
+        Vec2 min,max;
+        BoundRect() {
+            min=Vec2(0,0);
+            max=Vec2(0,0);
+        }
+        BoundRect(Vec2 min,Vec2 max) {
+            this->min=min;
+            this->max=max;
+        }
+        inline bool contains(Vec2 v) {
+            return v.x>=min.x && v.x<=max.x && v.y>=min.y && v.y<=max.y;
+        }
+        inline bool contains(BoundRect b) {
+            return b.min.x>=min.x && b.min.y>=min.y && b.max.x<=max.x && b.max.y<=max.y;
+        }
+        inline bool intersects(BoundRect b) {
+            return b.min.x<=max.x && b.min.y<=max.y && b.max.x>=min.x && b.max.y>=min.y;
+        } 
+        inline bool inside_screen() {
+            return intersects(BoundRect(Vec2(-0.5,-0.5),Vec2(0.5,0.5)));
+        } 
+        inline void put_point(Vec2 p) {
+            if(p.x<min.x) min.x=p.x;
+            if(p.y<min.y) min.y=p.y;
+            if(p.x>max.x) max.x=p.x;
+            if(p.y>max.y) max.y=p.y;
+        }
+        inline Vec2 size() {
+            return (max-min).abs();
+        }
+        inline Vec2 center() {
+            return (max+min)/2;
+        }
+    }; 
+
+    /** bounding box NOT TESTED */
+    struct BoundBoxVerts {
+        public:
+        Vec3 verts[8]; 
+        inline BoundBoxVerts to_space(Mat4 matrix) { 
+            BoundBoxVerts b;
+            for(int c=0;c<8;c++) b.verts[c]=matrix*verts[c];
+            return b;
+        } 
+        inline BoundRect to_screen_space(Mat4 model_view_projection) { 
+            BoundBoxVerts b=to_space(model_view_projection);
+            BoundRect r;
+            for(int c=0;c<8;c++){
+                Vec3 v=b.verts[c];
+                 r.put_point(Vec2(v.x,v.y)/v.z);
+            }
+            return r;
+        } 
+    };
+    class BoundBox { 
+        public:
+        Vec3 min=Vec3::ZERO(),max=Vec3::ZERO();
+        BoundBox() {
+            min=Vec3(0,0,0);
+            max=Vec3(0,0,0);
+        }
+        inline bool contains(Vec3 v) {
+            return v.x>=min.x && v.x<=max.x && v.y>=min.y && v.y<=max.y && v.z>=min.z && v.z<=max.z;
+        }
+        inline bool contains(BoundBox b) {
+            return b.min.x>=min.x && b.min.y>=min.y && b.min.z>=min.z && b.max.x<=max.x && b.max.y<=max.y && b.max.z<=max.z;
+        }
+        inline bool intersects(BoundBox b) {
+            return b.min.x<=max.x && b.min.y<=max.y && b.min.z<=max.z && b.max.x>=min.x && b.max.y>=min.y && b.max.z>=min.z;
+        } 
+        inline void put_point(Vec3 p) {
+            if(p.x<min.x) min.x=p.x;
+            if(p.y<min.y) min.y=p.y;
+            if(p.z<min.z) min.z=p.z;
+            if(p.x>max.x) max.x=p.x;
+            if(p.y>max.y) max.y=p.y;
+            if(p.z>max.z) max.z=p.z;
+        }
+        inline BoundBoxVerts extract_verts() {
+            BoundBoxVerts v;
+            v.verts[0]=Vec3(min.x,min.y,min.z);
+            v.verts[1]=Vec3(min.x,min.y,max.z);
+            v.verts[2]=Vec3(min.x,max.y,max.z);
+            v.verts[3]=Vec3(min.x,max.y,min.z); 
+            v.verts[4]=Vec3(max.x,max.y,max.z);
+            v.verts[5]=Vec3(max.x,max.y,min.z);
+            v.verts[6]=Vec3(max.x,min.y,min.z);
+            v.verts[7]=Vec3(max.x,min.y,max.z);
+            return v;
+        }
+        inline Vec3 size() { return (max-min).abs(); }
+        inline Vec3 center() { return (max+min)/2; }
+        inline Mat4 matrix() { return Mat4().translated(center()).scaled(size()); }
+    };
+    
 
 }
 

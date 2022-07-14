@@ -1,0 +1,14 @@
+- traduzir todo o código restante  para o wrapper glhelper.. criar um buffer de estado no lado do cpu. OK
+- frustrum culling e occlusion culling - em desenvolvimento
+
+compilador de obj para .hpp
+- skybox  -OK
+- particulas
+- renderizador de texto
+
+- cubemaps
+
+- iluminacao phong OK concluido
+- normal maps
+
+- point sprites // para grama

@@ -1,6 +1,7 @@
 
 #include  <GLFW/glfw3.h>
-
+#include <vector>
+#include <map>
 #include "dsystem.hpp"
 #include  "dmath.hpp"
 
@@ -8,6 +9,11 @@
 #include <string.h>
 #include <sys/time.h> /** timing */
 
+#include <fstream>
+#include <iterator>
+#include <vector>
+
+#include <stb_image.h>
 
 #define INPUT_MAX_KEYS 20
 
@@ -54,7 +60,7 @@ namespace DSystem {
         // estrutura para guardar os eventos do teclado
         typedef struct {
             KeyStatus action; // PRESSED,PRESING OU RELEASED
-            int key; // GLFW_KEY_ESCAPE exemplo
+            Key key; // GLFW_KEY_ESCAPE exemplo
         } KeyEvent;
         // buffer para armazenar as teclas pressionadas
         static KeyEvent events_buffer[INPUT_MAX_KEYS]={}; 
@@ -64,6 +70,27 @@ namespace DSystem {
         KeyEvent events[INPUT_MAX_KEYS]={};
         size_t event_count=0;
 
+        std::map<int,Key> keyboard_map={
+            {GLFW_KEY_W,UP},
+            {GLFW_KEY_S,DOWN},
+            {GLFW_KEY_A,LEFT},
+            {GLFW_KEY_D,RIGHT},
+            {GLFW_KEY_F,A},
+            {GLFW_KEY_E,Y},
+            {GLFW_KEY_Q,B},
+            {GLFW_KEY_UP,ALT_UP},
+            {GLFW_KEY_DOWN,ALT_DOWN},
+            {GLFW_KEY_LEFT,ALT_LEFT},
+            {GLFW_KEY_RIGHT,ALT_RIGHT},
+            {GLFW_KEY_SPACE,X},
+            {GLFW_KEY_ESCAPE,BACK},
+            {GLFW_KEY_ENTER,START},
+            {GLFW_KEY_LEFT_SHIFT,RB},
+            {GLFW_KEY_RIGHT_SHIFT,RT},
+            {GLFW_KEY_LEFT_CONTROL,LB}, 
+            {GLFW_KEY_RIGHT_CONTROL,LT},    
+        };
+
         static void update() {
             // copia do buffer para o estado
             memcpy(events,events_buffer,sizeof(KeyEvent)*INPUT_MAX_KEYS);
@@ -72,39 +99,84 @@ namespace DSystem {
             memset(events_buffer,0,sizeof(KeyEvent)*INPUT_MAX_KEYS);
             event_buffer_count=0;
         }
-        void register_key(int key,KeyStatus status) {
+        void register_key(Key key,KeyStatus status) {
+            if(event_buffer_count>=INPUT_MAX_KEYS) return; // buffer cheio
             if(event_buffer_count<INPUT_MAX_KEYS && (status==RELEASED || status==PRESSED)) {
                 events_buffer[event_buffer_count].key=key;
                 events_buffer[event_buffer_count].action=status;
                 event_buffer_count++;
             }
         }
-        KeyStatus get_status(int key) {
+        
+        static inline Key translate_glfw_key(int key) {
+            if(keyboard_map.count(key)) return keyboard_map[key];
+            return UNKNOWN;
+        }
+        /*
+        static inline std::vector<int> translate_key(Key key) {
+            std::vector<int> keys;
+            for(auto &k:keyboard_map) if(k.second==key) keys.push_back(key);
+            return keys;
+        }*/
+        static inline KeyStatus get_status(Key key) {
             for(size_t i=0;i<event_count;i++) {
                 if(events[i].key==key) return events[i].action;
             }
-            if(glfwGetKey(DSystem::window,key)==GLFW_PRESS) return PRESSING;
-            else return NOT_PRESSED;
+            bool pressing=false;
+            
+            for(auto &k:keyboard_map) 
+                if(k.second==key) pressing=pressing || (glfwGetKey(DSystem::window,k.first)==GLFW_PRESS);
+
+            return pressing ? PRESSING : NOT_PRESSED;
         }
-        bool released(int key) {return get_status(key)==RELEASED;}
-        bool pressed(int key) {return get_status(key)==PRESSED;}
-        bool pressing(int key) {return get_status(key)==PRESSING;}
+        bool released(Key key) {return get_status(key)==RELEASED;}
+        bool pressed(Key key)  {return get_status(key)==PRESSED;}
+        bool pressing(Key key) {return get_status(key)==PRESSING;}
+            
+        
+
+        static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+            // guarda os eventos no buffer
+            if(action==GLFW_PRESS || action==GLFW_RELEASE) {
+                register_key(translate_glfw_key(key), action==GLFW_PRESS ? PRESSED : RELEASED); 
+            }
+        }
     }
     
     static void error_callback(int error, const char* description) {
         fprintf(stderr, "Error: %s\n", description);
     }
-    static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-        // guarda os eventos no buffer
-        if(action==GLFW_PRESS || action==GLFW_RELEASE) {
-            Input::register_key(key, action==GLFW_PRESS ? Input::PRESSED : Input::RELEASED); 
+    namespace VFS { // VIRTUAL FILESYSTEM 
+        /* FileInfo load_file(const char *path) {
+            FileInfo info;
+            std::ifstream input( path, std::ios::binary ); 
+            // copies all data into buffer
+            std::vector<uint8_t> buffer(std::istreambuf_iterator<uint8_t>(input), {});
+            // copies buffer into info.data pointer
+            info.size=buffer.size();
+            info.data=calloc(1,info.size);
+            std::copy(buffer.begin(), buffer.end(), info.data);
+            buffer.erase();
+            return info;            
+        }*/
+        ImageInfo load_jpeg(const char *path) {
+            ImageInfo info;
+            int w=0,h=0,c=0; 
+            info.data=stbi_load(path,&w,&h,&c,0);
+            info.width=w;
+            info.height=h;
+            info.channels=c;
+            return info;
         }
     }
+    
 
 
     static int __winsize[2]={800,600};
 
     bool init(const char* title) {
+        stbi_set_flip_vertically_on_load(true);
+        printf("Initializing GLFW...\n");
         glfwSetErrorCallback(error_callback);
         
         if (!glfwInit())
@@ -114,7 +186,7 @@ namespace DSystem {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
         int monitors_count;
         GLFWmonitor ** monitors=glfwGetMonitors(&monitors_count);
         static char default_window_title[10]= "GROTA 3D";
@@ -126,7 +198,7 @@ namespace DSystem {
             exit(EXIT_FAILURE);
         }
 
-       // glfwSetKeyCallback(window, key_callback);
+        glfwSetKeyCallback(window, Input::key_callback);
 
         glfwMakeContextCurrent(window);
         if (!gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress)) {

@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 98)
+set(CMAKE_CXX_STANDARD 11)
 
 SET(BUILD_SHARED_LIBS FALSE)
 
@@ -17,18 +17,20 @@ include_directories(
 	"dependencies"
 	"dependencies/glad/include"
 	"dependencies/glfw-3.3.2/include"
+	"dependencies/stb/include"
 )
 
 add_library(denise2 STATIC
 	dsystem.cpp
-	denise.cpp
+	mesh_renderer.cpp
 )
-target_link_libraries(denise2 glad glfw)
+target_link_libraries(denise2 glad glfw stb_image)
 
 add_executable(boxes
 	examples/boxes.cpp
 )
 target_link_libraries(boxes denise2)
+
 add_executable(mapgenerator 
 	examples/perlin/mapgenerator.cpp
 )

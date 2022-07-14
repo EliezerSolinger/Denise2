@@ -8,18 +8,6 @@ extern "C" {
     #include "perlin.c"
 }
 
-#define SEED_MAPA 0
-#define SEED_BIOMA 1
-#define TERRAIN_SIZE 1024
-
-enum Tipo {
-    AGUA,
-    TERRA,
-    AREIA,
-    ARVORE,
-    NEVE,
-    PEDRA
-};
 
 
 #define GLFW_INCLUDE_NONE
@@ -30,135 +18,134 @@ enum Tipo {
 #include <cstring>
 #include "dmath.hpp"
 #include "dsystem.hpp"
-#include "denise.hpp"
-
+#include "mesh_renderer.hpp"
+#include <iostream>
 #include "../FPSCamera.cpp"
-//#include "denise.hpp"
+//#include "mesh_renderer.hpp"
 
 using namespace DMath;
 using namespace DSystem;
-using namespace Denise;
+using namespace MeshRenderer;
+
+#include "voxel.cpp"
+
+#include "chunk.cpp"
+
+Texture load_water_texture() {
+    constexpr int texture_res=32;
+    constexpr int seed_agua=1;
+    CPUTextureBuffer buffer=CPUTextureBuffer(texture_res,texture_res,1);
+    buffer.alloc(); 
+    for(int y=0; y<texture_res; y++) for(int x=0; x<texture_res; x++) {
+        float h=perlin2d(x, y, 0.4, 4,seed_agua);
+        buffer.put_pixel_color(x,y,(unsigned char)(h*255)); 
+    }  
+    Texture texture=buffer.send_to_gpu(true);
+    buffer.free();         
+    return texture; 
+}
+Texture load_grid_texture() {
+    constexpr int texture_res=32;
+    constexpr int grid_distance=4;
+    CPUTextureBuffer buffer=CPUTextureBuffer(texture_res,texture_res,4);
+    buffer.alloc(); 
+    for(int y=0; y<texture_res; y++) for(int x=0; x<texture_res; x++) { 
+        buffer.put_pixel_color(x,y,
+            Color(0,0,0,(x%grid_distance==0 || y%grid_distance==0) ? 1.f : 0.f )
+        ); 
+    }  
+    Texture texture=buffer.send_to_gpu();
+    buffer.free();         
+    return texture; 
+}
 
 
 int main() {
-    DSystem::init("Denise2 Demo - BOXES");
-    Denise::init();
-    printf("alocatting..\n");
-    
-    unsigned char* mapa = new unsigned char[TERRAIN_SIZE*TERRAIN_SIZE];
-    unsigned char* texture = new unsigned char[TERRAIN_SIZE*TERRAIN_SIZE*4];
-    memset(mapa, 0, TERRAIN_SIZE*TERRAIN_SIZE);
-    memset(texture, 0, TERRAIN_SIZE*TERRAIN_SIZE*4);
-    printf("Generating map...\n");
-    int x, y;
-    for(y=0; y<TERRAIN_SIZE; y++) for(x=0; x<TERRAIN_SIZE; x++) {
-        float h=perlin2d(x, y, 0.01, 3,SEED_BIOMA)*255;
-        mapa[(y * TERRAIN_SIZE + x)] = h;
-        Tipo tipo = AGUA;
-        if(h>=56+90) tipo = AREIA;
-        if(h>=56+90) {
-            srand(x*y);
-            if(perlin2d(x, y, 0.006, 2,SEED_BIOMA)>0.68) tipo = NEVE;
-            else if(perlin2d(x, y, 0.006, 2,SEED_BIOMA)<0.4) tipo = AREIA;
-            else tipo = TERRA;
-
-
-            // deixa espaços em branco que nao existem arvores no mapa
-            if(perlin2d(x, y, 0.9, 4,SEED_MAPA)>0.55) {
-                if(x%3==rand()%3 && y%3==rand()%3)  tipo = ARVORE;
-            }
-            
-        }
-        if(h>=65+170) {
-            tipo = PEDRA;
-        }
-        
-
-        float r=1, g=1, b=1;
-        if(tipo==AGUA) r=0.5, g=0.5, b=1;
-        if(tipo==AREIA) r=0.76, g=0.7, b=0.5;
-        if(tipo==TERRA) r=0.3, g=0.4, b=0.2;
-        if(tipo==NEVE) r=0.9, g=0.9, b=0.9;
-        if(tipo==PEDRA) r=0.5, g=0.5, b=0.5;
-
-        if(tipo==ARVORE) {
-            r=0.3, g=0.4, b=0.2;
-            if(h>=65+90) r=0.5, g=0.5, b=0.5;
-        }
-
-        texture[(y * TERRAIN_SIZE + x)*4] = r*255;
-        texture[(y * TERRAIN_SIZE + x)*4+1] = g*255;
-        texture[(y * TERRAIN_SIZE + x)*4+2] = b*255;
-        texture[(y * TERRAIN_SIZE + x)*4+4] = 255;
-    }
-    /*
-        stbi_write_png("texture.png", TERRAIN_SIZE, TERRAIN_SIZE, 4, texture, TERRAIN_SIZE*4);
-        stbi_write_png("heightmap.png", TERRAIN_SIZE, TERRAIN_SIZE, 4, mapa, TERRAIN_SIZE*4);
-    */
+    printf("main fun called..\n");
+    DSystem::init("MeshRenderer2 Demo - BOXES");
+    MeshRenderer::init();
+   
     Camera camera=Camera();
+    VBO quad=vbo_quad();
     VBO box=vbo_box();
-    Material material=Material();
-    FPSCamera::init();
-    printf("Generating texture...\n");
- 
-    material.albedo=Textures::load_RGBAIntArray(texture, TERRAIN_SIZE, TERRAIN_SIZE);
-    printf("Generating vertice buffer...\n");
-    VertexData *vertices= new VertexData[TERRAIN_SIZE*TERRAIN_SIZE*6];
-    int i=0;
-    for(y=0; y<TERRAIN_SIZE-1; y++) for(x=0; x<TERRAIN_SIZE-1; x++) {
-       // printf("washing %dx%d\n", x, y);
-        double prop=1.0/(double)TERRAIN_SIZE;
-        vertices[i].vertex=Vec3(x, (double) mapa[(y * TERRAIN_SIZE + x)] / 255, y);
-        vertices[i].normal=Vec3(0, 1, 0);
-        vertices[i].uv=Vec2(x, y)*prop;
-        i++;
-        vertices[i].vertex=Vec3(x+1, (double)  mapa[((y+1) * TERRAIN_SIZE + (x+1))]/ 255, y+1);
-        vertices[i].normal=Vec3(0, 1, 0);
-        vertices[i].uv=Vec2(x+1, y+1)*prop;
-        i++;
-        vertices[i].vertex=Vec3(x+1,  (double)mapa[(y * TERRAIN_SIZE + (x+1))] / 255,y);
-        vertices[i].normal=Vec3(0, 1, 0);
-        vertices[i].uv=Vec2(x+1, y)*prop;
-        i++;
+    FPSCamera::init(); 
+    printf("chegou aqui 1\n");
+    FPSCamera::camera.skybox.albedo=MeshRenderer::LOAD_TEXTURE("skybox2.jpg",true);
+    printf("chegou aqui 2\n");
+    Material material=Material(); 
+    material.opaque();
+    material.Kd=0.4;
 
-        vertices[i].vertex=Vec3(x, (double)mapa[((y+1) * TERRAIN_SIZE + x)] / 255, y+1);
-        vertices[i].normal=Vec3(0, 1, 0);
-        vertices[i].uv=Vec2(x, y+1)*prop;
-        i++;
-        vertices[i].vertex=Vec3(x+1,  (double)mapa[((y+1) * TERRAIN_SIZE + (x+1))] / 255,y+1);
-        vertices[i].normal=Vec3(0, 1, 0);
-        vertices[i].uv=Vec2(x+1, y+1)*prop;
-        i++;
-        vertices[i].vertex=Vec3(x, (double)mapa[(y * TERRAIN_SIZE + x)] / 255, y);
-        vertices[i].normal=Vec3(0, 1, 0);
-        vertices[i].uv=Vec2(x, y)*prop;
-        i++;
-        
+    Chunk chunk;
+    chunk.load();
+    //material.albedo=chunk.texture.id;
 
-    }
-    printf("sending mesh to gpu...\n");
-    VBO terrain=VBO::LOAD_MESH(vertices, TERRAIN_SIZE*TERRAIN_SIZE*6);
-    Material water=Material();
-    water.diffuse=Color(0.5, 0.5, 1, 1);
-    printf("Generating drawing...\n");
+    Material water;
+    water.albedo_color=Color(0.5, 0.5, 1, 1);
+    water.opaque();
+    water.Kd=0.2;
+    water.albedo=load_water_texture();
+    water.texture_scale=Vec2(500.f,500.f);
+    
+    Material grid;
+    grid.albedo=load_grid_texture();
+    grid.opaque();
+    
+
+    printf("Generating drawing...\n"); 
+    load_chunks(FPSCamera::pos);
+    FPSCamera::camera.skybox_y=0.05;
+    FPSCamera::camera.skybox_yaw=0.5;
+    int timerx=0;
     while(update()) {
         //camera.draw_viewport();
         FPSCamera::update();
-        if(Input::pressing(GLFW_KEY_ESCAPE)) break;
-       // printf("%f \n",Time::elapsed());
-        material.diffuse=Color::CYAN();
-        draw(box,Mat4().translated(0,-2,0),    FPSCamera::camera,material);
-        material.diffuse=Color::BLACK();
-        draw(box,Mat4().translated(0,2,0),     FPSCamera::camera,material);
-        material.diffuse=Color::WHITE();
-        draw(box,Mat4().translated(0,4,0),     FPSCamera::camera,material);
-        material.diffuse=Color::RED();
-        draw(box,Mat4().translated(0,0,0),    FPSCamera::camera,material);
-        material.diffuse=Color::WHITE();
-        draw(terrain,Mat4().scaled(1,50,1).translated(-TERRAIN_SIZE/2,-50,-TERRAIN_SIZE/2),FPSCamera::camera,material);
+        FPSCamera::camera.draw_skybox();
+
+        if(Input::pressed(Input::BACK)) break;
+        if(Input::pressed(Input::X)) {
+            std::cout << "player chunk X " << player_to_chunk_coord(FPSCamera::pos.x)
+                                  << " Y " << player_to_chunk_coord(FPSCamera::pos.z) << std::endl;
+        }
+        auto player_pos=FPSCamera::pos;
+        if(Input::pressing(Input::B)) {
+            load_chunks(player_pos);
+        }
+        if(Time::every(&timerx,1)) load_chunks(player_pos);
+        // printf("%f \n",Time::elapsed());
+        material.diffuse_color=Color::CYAN();
+        draw(box,Mat4().translated(0,-2,0),FPSCamera::camera,material);
+        material.diffuse_color=Color::BLACK();
+        draw(box,Mat4().translated(0,2,0),FPSCamera::camera,material);
+        material.diffuse_color=Color::WHITE();
+        draw(box,Mat4().translated(0,4,0),FPSCamera::camera,material);
+        material.diffuse_color=Color::RED();
+        draw(box,Mat4().translated(0,0,0),FPSCamera::camera,material);
+        material.diffuse_color=Color::WHITE();
+        
+        for(auto &ck:chunks) {
+            //float chunk_distance=Vec3::distance(chunk_global_position(x,y),player_pos);
+           // if(chunk_distance>render_distance*CHUNK_SIZE) continue;
+           if(Vec3::distance(ck.global_position(),Vec3(player_pos.x,0,player_pos.z))>render_distance*CHUNK_SIZE) continue;
+            if(!ck.loaded) continue;
+            if(ck.peak_height<0.5725490196) continue;
+            material.albedo=ck.texture.id;
+            auto ckpos=ck.global_position();
+            if(
+                (FPSCamera::camera.view_matrix*ckpos).z>CHUNK_SIZE
+            ) continue;
+            Mat4 model_m=Mat4().scaled(1,0.2,1).translated(ckpos.x,-50,ckpos.z);
+            //draw(box,model_m*ck.terrain.bound_box.matrix(),FPSCamera::camera,grid); 
+            draw(ck.terrain,model_m,FPSCamera::camera,material);
+        }
+        water.texture_offset.x=sin(Time::elapsed()*0.02)*0.01;
+        water.texture_offset.y=cos(Time::elapsed()*0.02)*0.01;
+ 
         // printf("%f\n",delta());
-        draw(box,Mat4().scaled(TERRAIN_SIZE,1,TERRAIN_SIZE).translated(-TERRAIN_SIZE/2,-25,-TERRAIN_SIZE/2),FPSCamera::camera,water);
+        draw(box,Mat4().scaled(CHUNK_SIZE*100,1,CHUNK_SIZE*100).translated(CHUNK_SIZE/2,-22,CHUNK_SIZE/2),FPSCamera::camera,water);
+ 
     }
+    unload_all_chunks();
     destroy();
 
     return 0;

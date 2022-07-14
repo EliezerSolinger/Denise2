@@ -1,12 +1,13 @@
 @echo off
+cls
 if not exist build mkdir build
 cd build
 if not exist bin mkdir bin
-cd bin
+rem cd bin
 if exist boxes.exe del boxes.exe
-cd ..
-mingw32-make
-copy boxes.exe bin
-cd bin
-boxes
+rem cd ..
+mingw32-make && boxes
+rem copy boxes.exe bin
+rem cd bin
+REM boxes
 cd ..\..\

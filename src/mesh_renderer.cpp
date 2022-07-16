@@ -20,11 +20,13 @@ namespace MeshRenderer {
         varying vec2 texture_coordinates;
         varying vec3 normal_iterpolated;
         varying vec3 vert_pos;
+        varying vec3 glpos;
         void main() {
             vec4 v = model_view_matrix * vec4(a_vertex, 1.0);
             vert_pos = vec3(v) / v.w;
 
             gl_Position = model_view_projection_matrix * vec4(a_vertex, 1.0);
+            glpos=vec3(gl_Position);///gl_Position.w;
             texture_coordinates= a_textcoord;
             normal_iterpolated=a_normal;
         }
@@ -43,13 +45,19 @@ namespace MeshRenderer {
         uniform float Kd;   // Diffuse reflection coefficient
         uniform float Ks;   // Specular reflection coefficient
         uniform float shininess; 
+        uniform float fog_distance; 
+        uniform float fog_density;
+        uniform vec4 fog_color; 
         uniform bool blinn; // Use blinn-phong shading or not
         varying vec2 texture_coordinates;
         varying vec3 normal_iterpolated;
         varying vec3 vert_pos;
+        varying vec3 glpos;
+        
         void main() {            
-            vec3 lightPos=vec3(0,100,0);
-            vec3 lightDir=vec3(0.2,1,0);
+            bool fog_exponential=true;
+            //vec3 lightPos=vec3(0,100,0);
+            vec3 lightDir=vec3(0.2,1,0); 
 
             vec3 N = normalize(normal_iterpolated);
             vec3 L = normalize(lightDir); //lightPos - vert_pos;
@@ -74,6 +82,13 @@ namespace MeshRenderer {
                                 Kd * lambertian * diffuse_color*tex_color +
                                 Ks * specular * specular_color;
 
+            float d_factor=(glpos.z/fog_distance)*fog_density;
+            if(d_factor<0.0) d_factor=0.0;
+            else if(d_factor>1.0) d_factor=1.0;
+            if(fog_exponential) d_factor*=d_factor;
+
+            gl_FragColor = mix(gl_FragColor,fog_color,d_factor);
+
             if(gl_FragColor.a<0.6) discard;
         }
     );
@@ -89,10 +104,12 @@ namespace MeshRenderer {
     VBO vbo_quad()  { return debug_quad; }
     VBO vbo_box()   { return debug_box;  }
     VBO vbo_skybox()   { return skybox;  }
-    void draw_call(VBO vbo,Mat4 model_matrix,Mat4 view_matrix,Mat4 projection_matrix,Material material) {
+    inline bool draw_call(VBO vbo,Mat4 model_matrix,Mat4 view_matrix,Mat4 projection_matrix,Material material,Camera camera) {
        
         Mat4 model_view_matrix=model_matrix*view_matrix; 
         Mat4 model_view_projection_matrix=(projection_matrix*view_matrix)*model_matrix;
+ 
+
        shader_program.use(); 
         if(material.albedo.id) material.albedo.bind();
         else glBindTexture(GL_TEXTURE_2D, blank_texture);
@@ -115,6 +132,9 @@ namespace MeshRenderer {
         shader_program.uniform("Ks",material.Ks);
         shader_program.uniform("shininess",material.shininess);
         shader_program.uniform("blinn",material.blinn);
+        shader_program.uniform_color("fog_color",camera.fog_color);
+        shader_program.uniform("fog_density",camera.fog_density);
+        shader_program.uniform("fog_distance",(float)camera.far);
 
         
         
@@ -138,17 +158,18 @@ namespace MeshRenderer {
         glDisableVertexAttribArray(_ATTRIBUTE_TEXTURE_COORDINATES);
         vbo.unbind();
         shader_program.unbind();
+        return true;
     }
-    void draw(VBO vbo, Mat4 model_matrix,Camera camera,Material material) {
+    bool draw(VBO vbo, Mat4 model_matrix,Camera camera,Material material) {
         
         if(!vbo.id) {
             printf("tryng to draw a null buffer\n");
-            return;
+            return false;
         }
         
         Mat4 view_matrix=camera.view_matrix;
         Mat4 projection_matrix=camera.projection_matrix();
-        draw_call(vbo,model_matrix,view_matrix,projection_matrix,material);
+        return draw_call(vbo,model_matrix,view_matrix,projection_matrix,material,camera);
         //if(!bbox_verts.to_screen_space(model_view_projection_matrix).inside_screen()) return ;
         
         /*auto t_draw=[&]() {*/
@@ -176,7 +197,7 @@ namespace MeshRenderer {
         glDisable(GL_DEPTH_TEST); 
         Mat4 v=view_matrix;
         v.m[3][0]=v.m[3][1]=v.m[3][2]=0; 
-        draw_call(vbo_skybox(),Mat4().rotated(0,skybox_yaw,0).translated(0,skybox_y,0),v,projection_matrix(),skybox);
+        draw_call(vbo_skybox(),Mat4().rotated(0,skybox_yaw,0).translated(0,skybox_y,0),v,projection_matrix(),skybox,*this);
 
         if(mode==CameraMode::CAMERA_3D) glEnable(GL_DEPTH_TEST);
     }

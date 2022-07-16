@@ -128,9 +128,10 @@ void load_chunks(Vec3 player_pos) {
 
     for(int y=-chunk_load_radius+chk_y;y<chunk_load_radius+chk_y+1;y++) {
         for(int x=-chunk_load_radius+chk_x;x<chunk_load_radius+chk_x+1;x++) {
+            bool _break=false;
             //std::cout << "chunk X " << x << " Y " << y << std::endl;
 
-        float chunk_distance=Vec3::distance(chunk_global_position(x,y),player_pos);
+            float chunk_distance=Vec3::distance(chunk_global_position(x,y),player_pos);
            int load_level=(int)(chunk_distance/(float)CHUNK_SIZE)/mip_distance;
            //load_level=0;
            // int load_level=0;
@@ -141,6 +142,7 @@ void load_chunks(Vec3 player_pos) {
                     ck.load(load_level);
                     has_chunk=true; 
                     break; 
+                    _break=true;
                 }
             }
             if(!has_chunk) {
@@ -149,7 +151,9 @@ void load_chunks(Vec3 player_pos) {
                 new_chunk.pos_y=y;
                 new_chunk.load(load_level); 
                 chunks.push_back(new_chunk);
+                _break=true;
             }
+            if(_break) break;
         }
     }
      /** REMOVE DO ARRAY TODOS OS CHUNKS QUE ESTAO LONGES, E DESCARREGA ELES DA GPU PRIMERIRO*/
@@ -164,7 +168,7 @@ void load_chunks(Vec3 player_pos) {
                  }),
     chunks.end());
 
-    std::cout << "--" << chunks.size() << " chunks in the vector..\n";
+   // std::cout << "--" << chunks.size() << " chunks in the vector..\n";
 }
 
 void unload_all_chunks() {

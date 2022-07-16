@@ -3,11 +3,17 @@
 
 compilador de obj para .hpp
 - skybox  -OK
-- particulas
 - renderizador de texto
 
 - cubemaps
 
+
+
+
+
+- particulas
+
+-fog OK
 - iluminacao phong OK concluido
 - normal maps
 

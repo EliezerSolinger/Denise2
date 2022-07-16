@@ -21,10 +21,10 @@ namespace MeshRenderer {
     struct MeshTriangle { 
         struct VertIndex { uint32_t vert, uv,normal; } vertices[3];
     };
-    inline Texture LOAD_TEXTURE(const char* path,bool smoth=true) {
+    inline Texture LOAD_TEXTURE(const char* path,bool smoth=true,bool mipmap=true) {
         auto img = VFS::load_jpeg(path);
         auto buff =CPUTextureBuffer::FROM_POINTER(img.width,img.height,img.channels,img.data);
-        Texture t=buff.send_to_gpu();
+        Texture t=buff.send_to_gpu(smoth,mipmap);
         //img.free_pointer(); // na verdade é o mesmo ponteiro
         buff.free(); // porque ele nao copia o ponteiro apenas o reinterpreta
         return t;
@@ -106,14 +106,17 @@ namespace MeshRenderer {
         Mat4 view_matrix;
         Material skybox;
         float skybox_yaw=0;
-        float skybox_y;
+        float skybox_y=0;
+        float fog_density=1;
+        Color fog_color=Color(0.78,0.80,0.86,1); 
+
 
         Camera() {
             mode=CAMERA_2D;
             fix_aspect=false;
             is_perspective=false;
             clear_color=Color(0.6,0.75,1.0,1.0);
-            fov=70; near=-0.1; far=1000;
+            fov=70; near=-0.1; far=600;
             aspect=1.0;
             ortho_left=-1; ortho_right=1;
             ortho_bottom=-1; ortho_top=1;
@@ -150,7 +153,7 @@ namespace MeshRenderer {
             mode=CAMERA_3D;
             is_perspective=true;
             fix_aspect=true;
-            near=0.1;far=5000;
+            near=0.1;far=1000;
             fov=fovy;
         }
         inline Mat4 projection_matrix() {
@@ -191,7 +194,7 @@ namespace MeshRenderer {
         void draw_skybox();
     };
 
-    void draw(const VBO vbo,Mat4 matrix,Camera camera,Material material);
+    bool draw(const VBO vbo,Mat4 matrix,Camera camera,Material material);
     void init();
 }
 #endif

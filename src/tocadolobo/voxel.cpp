@@ -1,6 +1,9 @@
 #define SEED_MAPA 0
 #define SEED_BIOMA 1
 #define TERRAIN_SIZE 1024
+extern "C" {
+    #include "perlin.c"
+}
 
 enum Tipo {
     AGUA,
@@ -18,11 +21,15 @@ struct VoxelInfo {
     Tipo tipo=AGUA;   
 };
 
+float terrain_altitude(float x, float y) {
+    return perlin2d(x, y, 0.005, 3,SEED_BIOMA);
+}
+
 VoxelInfo generate_voxel(int x, int y) {
     VoxelInfo info;
     x+=1000;
     y+=1000;
-    float h=perlin2d(x, y, 0.01, 3,SEED_BIOMA);  
+    float h=terrain_altitude(x, y);  
     info.altitude=h;     
     h=h*255;
     

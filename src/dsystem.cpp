@@ -159,10 +159,10 @@ namespace DSystem {
             buffer.erase();
             return info;            
         }*/
-        ImageInfo load_jpeg(const char *path) {
+        ImageInfo load_jpeg(std::string path) {
             ImageInfo info;
             int w=0,h=0,c=0; 
-            info.data=stbi_load(path,&w,&h,&c,0);
+            info.data=stbi_load(path.c_str(),&w,&h,&c,0);
             info.width=w;
             info.height=h;
             info.channels=c;

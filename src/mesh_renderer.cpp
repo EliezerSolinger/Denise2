@@ -55,7 +55,7 @@ namespace MeshRenderer {
         varying vec3 glpos;
         
         void main() {            
-            bool fog_exponential=true;
+            bool fog_exponential=false;
             //vec3 lightPos=vec3(0,100,0);
             vec3 lightDir=vec3(0.2,1,0); 
 
@@ -140,22 +140,22 @@ namespace MeshRenderer {
         
         vbo.bind();
 
-        GLint _ATTRIBUTE_VERTEX=shader_program.attribute_location("a_vertex");
-        GLint _ATTRIBUTE_NORMAL=shader_program.attribute_location("a_normal");
-        GLint _ATTRIBUTE_TEXTURE_COORDINATES=shader_program.attribute_location("a_textcoord");
+        GLint vertex_attr=shader_program.attribute_location("a_vertex");
+        GLint normal_attr=shader_program.attribute_location("a_normal");
+        GLint uv_attr=shader_program.attribute_location("a_textcoord");
 
-        glEnableVertexAttribArray(_ATTRIBUTE_VERTEX);
-        glEnableVertexAttribArray(_ATTRIBUTE_NORMAL);
-        glEnableVertexAttribArray(_ATTRIBUTE_TEXTURE_COORDINATES);
+        glEnableVertexAttribArray(vertex_attr);
+        glEnableVertexAttribArray(normal_attr);
+        glEnableVertexAttribArray(uv_attr);
 
-        glVertexAttribPointer(_ATTRIBUTE_VERTEX, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData,vertex));
-        glVertexAttribPointer(_ATTRIBUTE_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData,normal));
-        glVertexAttribPointer(_ATTRIBUTE_TEXTURE_COORDINATES, 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData,uv));
+        glVertexAttribPointer(vertex_attr, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData,vertex));
+        glVertexAttribPointer(normal_attr, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData,normal));
+        glVertexAttribPointer(uv_attr, 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData,uv));
         
         vbo.draw(); 
-        glDisableVertexAttribArray(_ATTRIBUTE_VERTEX);
-        glDisableVertexAttribArray(_ATTRIBUTE_NORMAL);
-        glDisableVertexAttribArray(_ATTRIBUTE_TEXTURE_COORDINATES);
+        glDisableVertexAttribArray(vertex_attr);
+        glDisableVertexAttribArray(normal_attr);
+        glDisableVertexAttribArray(uv_attr);
         vbo.unbind();
         shader_program.unbind();
         return true;

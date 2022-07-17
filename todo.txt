@@ -1,20 +1,22 @@
-- traduzir todo o código restante  para o wrapper glhelper.. criar um buffer de estado no lado do cpu. OK
+ 
+
+- refatorar codigo dos chunks - hoje
 - frustrum culling e occlusion culling - em desenvolvimento
 
-compilador de obj para .hpp
-- skybox  -OK
-- renderizador de texto
-
-- cubemaps
-
-
-
-
-
-- particulas
-
--fog OK
-- iluminacao phong OK concluido
-- normal maps
 
 - point sprites // para grama
+- arvores e pedras nos chunks objetos estaticos
+
+- cubemaps
+- renderizador de texto gerador de mesh de texto
+- normal maps
+- criar um buffer de estado no lado do cpu. e testar velocidades
+- particulas - nao importante
+
+
+
+- iluminacao phong OK
+- compilador de obj para .hpp OK
+- skybox  -OK
+- fog OK
+- traduzir todo o código restante  para o wrapper glhelper..  OK

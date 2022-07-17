@@ -32,7 +32,7 @@ add_executable(boxes
 target_link_libraries(boxes denise2)
 
 add_executable(mapgenerator 
-	examples/perlin/mapgenerator.cpp
+	tocadolobo/main.cpp
 )
 target_link_libraries(mapgenerator denise2)
 

@@ -1,0 +1,61 @@
+<textarea id="objfile_input" rows="20" style="width:40%">
+
+</textarea>
+<textarea id="objfile_output" rows="20"  style="width:40%">
+
+</textarea>
+<br>
+<button onclick="transpile()">TRANSPILE OBJ FILE</button>
+<script>
+
+function transpile() {
+    let obj_name="obj";
+    let objfile=document.getElementById("objfile_input");
+
+    let vertices=[];
+    let normals=[];
+    let uvs=[]; 
+    let faces=[];
+
+
+    for(let line of objfile.split("\n")){
+        let words=line.split(" ");
+        if(words[0]=="v"){
+            vertices.push("{"+words.slice(1).map(x=>parseFloat(x)).join(",")+"}");
+        }
+        if(words[0]=="vn"){
+            normals.push("{"+words.slice(1).map(x=>parseFloat(x)).join(",")+"}");
+        }
+        if(words[0]=="vt"){
+            uvs.push("{"+words.slice(1).map(x=>parseFloat(x)).join(",")+"}");
+        }
+        if(words[0]=="f"){
+            faces.push("{{"+words.slice(1).map(x=>"{"+x.split("/").join(",")+"}").join(",")+"}}");
+        }
+        if(words[0]=="o"){
+            obj_name=words[1];
+        }
+
+    }
+
+    let vertices_cpp=[];
+let cpp_definition=
+`Mesh hardcoded_${obj_name}={
+{    /// VERTICES
+${vertices.join(",\n")}
+},{  // NORMALS
+${normals.join(",\n")}
+},{  // UVS
+${uvs.join(",\n")}
+},{  // TRIANGLES INDEXES 
+${faces.join(",\n")}
+}
+};             
+`; 
+    document.getElementById("objfile_output").value=cpp_definition;
+    return cpp_definition;
+
+} 
+
+
+</script>

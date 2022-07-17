@@ -369,7 +369,7 @@ namespace DGL {
         inline void draw(GLsizei count=0,GLuint mode=GL_TRIANGLES,GLint first=0) {
             if(!id) err_printf("trying to draw with a null buffer\n");
             if(count==0) count=this->size;
-            glDrawArrays(mode, first, count);
+            glDrawArrays(GL_LINES, first, count);
         }
     };
     class EBO : public Buffer {

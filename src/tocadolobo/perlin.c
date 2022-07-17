@@ -17,7 +17,9 @@ static int hash[] = {
 
 
 inline int noise2(int x, int y,int seed) {
-    return hash[(hash[(y + seed) % 256] + x) % 256];
+    int ind=(hash[(y + seed) % 256] + x);
+    if(ind<0) ind=-ind;
+    return hash[ ind % 256];
 }
 
 inline float lin_inter(float x, float y, float s) { // interpolacao linear
@@ -41,7 +43,7 @@ inline float noise2d(float x, float y,int seed) {
     return smooth_inter(low, high, y_frac);
 }
 
-inline float perlin2d(float x, float y, float freq, int depth,int seed) {
+inline float _perlin2d(float x, float y, float freq, int depth,int seed) {
     float xa = x*freq;
     float ya = y*freq;
     float amp = 1.0;
@@ -57,5 +59,9 @@ inline float perlin2d(float x, float y, float freq, int depth,int seed) {
         ya *= 2;
     }
     return (fin/div);
+}
+inline float perlin2d(float x, float y, float freq, int depth,int seed) {
+    return (((_perlin2d(x,y,freq,depth,seed)+_perlin2d(x,y,freq*2.0f,depth,seed))/2.0f)+_perlin2d(x,y,freq*4.0f,depth,seed)
+                )/2.0f;
 }
 

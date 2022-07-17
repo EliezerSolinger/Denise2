@@ -2,6 +2,7 @@
 #define MESH_RENDERER_SYSTEM_HPP
 #include <cstdio>
 #include  "dmath.hpp"
+#include <string>
 
 namespace DSystem {
     using DMath::Vec2;
@@ -71,7 +72,7 @@ namespace DSystem {
                 data=NULL;
             }  
         };
-        FileInfo load_file(const char *path);
+        FileInfo load_file(std::string path);
         struct ImageInfo {
             uint32_t width, height, channels;
             void* data=NULL;
@@ -81,7 +82,7 @@ namespace DSystem {
                 data=NULL;
             }
         };
-        ImageInfo load_jpeg(const char *path);
+        ImageInfo load_jpeg(std::string path);
     }
 }
 

@@ -123,7 +123,7 @@ int main() {
         for(auto &ck:chunks) {
             //float chunk_distance=Vec3::distance(chunk_global_position(x,y),player_pos);
            // if(chunk_distance>render_distance*CHUNK_SIZE) continue;
-            if(Vec3::distance(ck.global_position(),Vec3(player_pos.x,0,player_pos.z))>render_distance*CHUNK_SIZE) continue;
+          //  if(Vec3::distance(ck.global_position(),Vec3(player_pos.x,0,player_pos.z))>render_distance*CHUNK_SIZE) continue;
             if(!ck.loaded) continue;
            // if(ck.peak_height<0.5725490196) continue;
             material.albedo=ck.texture.id;
@@ -131,8 +131,8 @@ int main() {
            /* if(
                 (fpscamera.camera.view_matrix*ckpos).z>CHUNK_SIZE
             ) continue;*/
-            Mat4 model_m=Mat4().scaled(1,0.2,1).translated(ckpos.x,-50,ckpos.z);
-            //draw(box,model_m*ck.terrain.bound_box.matrix(),fpscamera.camera,grid); 
+            Mat4 model_m=Mat4().scaled(1,50,1).translated(ckpos.x,-25,ckpos.z);
+           // draw(box,model_m*ck.terrain.bound_box.matrix(),fpscamera.camera,grid); 
             if(draw(ck.terrain,model_m,fpscamera.camera,material)) { chunks_drawed++; }
         }
         water.texture_offset.x=sin(Time::elapsed()*0.005)*0.01;

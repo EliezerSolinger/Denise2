@@ -27,23 +27,29 @@ class Chunk {
 
     inline void unload() {
         if(!loaded) return;
-        if(terrain.id) terrain.delete_buffer();
-        if(texture.id) texture.delete_texture();
+        if(terrain.is_buffer()) terrain.delete_buffer();
+        if(texture.is_texture()) texture.delete_texture();
         loaded=false;
     }
     inline void load_terrain() {
         peak_height=0;
        // printf("chegou aqui load_terrain\n");
-        if(terrain.id) terrain.delete_buffer(); 
+      //  if(terrain.id) terrain.delete_buffer(); 
         Vec3 chunk_pos=global_position();
         uint32_t chunk_res=size;
+        
+        if(texture.is_texture()) texture.delete_texture();
+
         MeshRenderer::Mesh mesh;
         mesh.vertices.resize(chunk_res*chunk_res);
         mesh.normals.resize(chunk_res*chunk_res);
         mesh.uvs.resize(chunk_res*chunk_res);
-        mesh.triangles.resize((chunk_res-1)*(chunk_res-1)*2); 
+
 
         auto get_index=[&](uint32_t x,uint32_t y) {return (y*chunk_res)+x;};
+        
+        //DGL::CPUTextureBuffer t(chunk_res,chunk_res,1);
+        //t.alloc();
         
         float factor=(1.0/chunk_res);
         for(auto y=0;y<chunk_res;y++) 
@@ -54,8 +60,9 @@ class Chunk {
            mesh.uvs[idx]=Vec2(x,y)*factor; // texture coordinate
 
             auto get_vert=[&](float x, float y) {
-                Vec3 vt=Vec3(x,0,y)*(float)size; // vertice
-              //  vt.y=terrain_altitude(vt.x+chunk_pos.x,vt.y+chunk_pos.z);
+                Vec3 vt=Vec3(x,0,y)*factor*(float)size; // vertice
+                vt.y=terrain_altitude(vt.x+chunk_pos.x+5000,vt.z+chunk_pos.z+5000);
+               // printf("alt %f\n",vt.y);
                 return vt;
             };
            
@@ -68,9 +75,20 @@ class Chunk {
             Vec3 L=get_vert(x+1,y);
             Vec3 B=get_vert(x,y-1);  
             Vec3 T=get_vert(x,y+1);  
-            mesh.normals[idx]=Vec3::cross(R-L, T-B).normalized();  
+            Vec3 n=Vec3::cross(R-L, T-B).normalized();
+            mesh.normals[idx]=n;  
+            
+            //Vec3 vt=get_vert(x,y); // vertice
+         //   t.put_pixel_color(x,y, n.to_color());
         }
-           
+       // texture=t.send_to_gpu();
+        //t.free();
+        
+       
+        mesh.triangles.resize((chunk_res-1)*(chunk_res-1)*2); 
+        
+        auto get_index_tri=[&](uint32_t x,uint32_t y) {return (y*(chunk_res-1))+x;};
+
         for(auto y=0;y<chunk_res-1;y++) for(auto x=0;x<chunk_res-1;x++)  { 
            // std::cout << "indexando  " << x << "x" << y << std::endl;
             auto idx=get_index_tri(x,y);
@@ -90,7 +108,8 @@ class Chunk {
         
         //std::cout << "criando mesha  " << std::endl;
         terrain=mesh.send_to_gpu();
-        mesh.clear(); 
+       // terrain=MeshRenderer::vbo_quad();
+       // mesh.clear(); 
     }
     inline void load(int subdivide=0) {
         if(loaded && subdivisions==subdivide) return; 

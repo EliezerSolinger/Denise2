@@ -35,6 +35,38 @@ namespace DMath {
         }
         return 1;
     }
+
+    struct RGBAComponents { uint8_t r,g,b,a; };
+
+    class Color {
+        public: float r,g,b,a;
+        Color() { r = g = b = a = 1; }
+        Color(float red, float green, float blue, float alpha=1.0) { r = red; g = green; b = blue; a = alpha; }
+        
+        inline RGBAComponents to_bytes() {
+            return {float_to_byte(r),float_to_byte(g),float_to_byte(b),float_to_byte(a)};
+        } 
+        static inline Color FROM_BYTE_COMPONENTS(uint8_t r=255,uint8_t g=255,uint8_t b=255, uint8_t a=255) {
+            return Color(byte_to_float(r),byte_to_float(g),byte_to_float(b),byte_to_float(a));
+        }
+        static inline Color WHITE()     { return Color(1,1,1,1); }
+        static inline Color BLACK()     { return Color(0,0,0,1); }
+        static inline Color RED()       { return Color(1,0,0,1); }
+        static inline Color GREEN()     { return Color(0,1,0,1); }
+        static inline Color BLUE()      { return Color(0,0,1,1); }
+        static inline Color YELLOW()    { return Color(1,1,0,1); }
+        static inline Color CYAN()      { return Color(0,1,1,1); }
+        static inline Color MAGENTA()   { return Color(1,0,1,1); }
+        static inline Color GRAY()      { return Color(0.5,0.5,0.5,1); }
+        static inline Color LIGHT_GRAY(){ return Color(0.75,0.75,0.75,1); }
+        static inline Color DARK_GRAY() { return Color(0.25,0.25,0.25,1); }
+        static inline Color ORANGE()    { return Color(1,0.5,0,1); }
+        static inline Color PURPLE()    { return Color(0.5,0,0.5,1); }
+        static inline Color PINK()      { return Color(1,0.75,0.75,1); }
+        static inline Color BROWN()     { return Color(0.5,0.25,0,1); }
+        static inline Color LIME()      { return Color(0,1,0,1); }
+    };
+
     /** EXPERIMENTAL THIS MAY NOT WORK PROPERLY*/
     static inline float cos_from_sin(float sin, float angle) { 
         float cos=sqrt(1-sin*sin);
@@ -95,6 +127,7 @@ namespace DMath {
         inline float magnitude() const { return length(); }
         inline Vec3 normalized() const { return *this / magnitude(); } 
         inline Vec3 abs() const { return Vec3(DMath::abs(x), DMath::abs(y), DMath::abs(z)); }
+        inline Color to_color() { return Color(x,y,z,1.0f);}
         static inline Vec3 cross(Vec3 a,Vec3 b ) {
             return Vec3(
                 a.y * b.z - a.z * b.y, 
@@ -157,35 +190,7 @@ namespace DMath {
         static inline Vec2 DOWN() { return Vec2(0, -1); }
         static inline Vec2 LEFT() { return Vec2(-1, 0); }
         static inline Vec2 RIGHT(){ return Vec2(1, 0); } 
-    };
-    struct RGBAComponents { uint8_t r,g,b,a; };
-    class Color {
-        public: float r,g,b,a;
-        Color() { r = g = b = a = 1; }
-        Color(float red, float green, float blue, float alpha=1.0) { r = red; g = green; b = blue; a = alpha; }
-        
-        inline RGBAComponents to_bytes() {
-            return {float_to_byte(r),float_to_byte(g),float_to_byte(b),float_to_byte(a)};
-        } 
-        static inline Color FROM_BYTE_COMPONENTS(uint8_t r=255,uint8_t g=255,uint8_t b=255, uint8_t a=255) {
-            return Color(byte_to_float(r),byte_to_float(g),byte_to_float(b),byte_to_float(a));
-        }
-        static inline Color WHITE()     { return Color(1,1,1,1); }
-        static inline Color BLACK()     { return Color(0,0,0,1); }
-        static inline Color RED()       { return Color(1,0,0,1); }
-        static inline Color GREEN()     { return Color(0,1,0,1); }
-        static inline Color BLUE()      { return Color(0,0,1,1); }
-        static inline Color YELLOW()    { return Color(1,1,0,1); }
-        static inline Color CYAN()      { return Color(0,1,1,1); }
-        static inline Color MAGENTA()   { return Color(1,0,1,1); }
-        static inline Color GRAY()      { return Color(0.5,0.5,0.5,1); }
-        static inline Color LIGHT_GRAY(){ return Color(0.75,0.75,0.75,1); }
-        static inline Color DARK_GRAY() { return Color(0.25,0.25,0.25,1); }
-        static inline Color ORANGE()    { return Color(1,0.5,0,1); }
-        static inline Color PURPLE()    { return Color(0.5,0,0.5,1); }
-        static inline Color PINK()      { return Color(1,0.75,0.75,1); }
-        static inline Color BROWN()     { return Color(0.5,0.25,0,1); }
-        static inline Color LIME()      { return Color(0,1,0,1); }
+        inline Color to_color() { return Color(x,0.0f,y,1.0f);}
     };
     class Mat4 {
         public: float m[4][4];

@@ -162,7 +162,7 @@ namespace MeshRenderer {
     }
     bool draw(VBO vbo, Mat4 model_matrix,Camera camera,Material material) {
         
-        if(!vbo.id) {
+        if(!vbo.id || !vbo.is_buffer()) {
             printf("tryng to draw a null buffer\n");
             return false;
         }

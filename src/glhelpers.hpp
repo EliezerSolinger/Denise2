@@ -10,13 +10,15 @@ using DMath::Mat4;
 using DMath::BoundBox;
 
 #define SHADER_INLINE(shader)  #shader
+
+//#define DEBUG
 #ifdef DEBUG
-    #define log_printf printf(
+    #define log_printf printf
 #else
     #define log_printf ;//
 #endif
 
-#define SHOW_ERRORS
+//#define SHOW_ERRORS
 #ifdef SHOW_ERRORS
     #define err_printf printf
 #else 
@@ -82,7 +84,7 @@ namespace DGL {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smoth ? GL_LINEAR : GL_NEAREST); 
             if(mipmap) glGenerateMipmap(GL_TEXTURE_2D);
         }
-        inline void is_texture() { glIsTexture( id); }
+        inline bool is_texture() { return id!=0 || glIsTexture( id); }
         inline void set_image(const GLvoid *data,GLsizei width,GLsizei height,GLuint channels_format=GL_RGB,GLuint byte_format=GL_UNSIGNED_BYTE)  {
             log_printf("Loading texture id %d with %d pixels\n",id,width*height);
             glTexImage2D(GL_TEXTURE_2D, 0, channels_format, width, height, 0, channels_format, byte_format, data);
@@ -92,6 +94,10 @@ namespace DGL {
             log_printf("Texture id: %d created\n",id);
         }
         inline void delete_texture() {
+            if(!is_texture()) {
+                err_printf("trying to delete a null texture\n");
+                return;
+            }
             log_printf("Texture id: %d deleted\n",id);
             glDeleteTextures(1, &id);
             id=0;
@@ -165,10 +171,16 @@ namespace DGL {
         ShaderProgram(GLuint id) { this->id=id; }
         ShaderProgram() { id=0; }
 
-        inline void bind() { glUseProgram(id); }
+        inline bool is_program() { return id!=0 || glIsProgram(id); }
+        inline void use() {  
+            if(!is_program()) {
+                err_printf("trying to use a null shader program\n");
+                return;
+            }
+            glUseProgram(id); 
+        }
+        inline void bind() { use(); }
         inline void unbind() { glUseProgram(0); }
-        inline void is_program() { glIsProgram(id); }
-        inline void use() { glUseProgram(id); }
         inline bool link() {
             log_printf("linking %d shader program\n", id);
             glLinkProgram(id);
@@ -287,24 +299,34 @@ namespace DGL {
         Buffer(GLuint id,GLuint type) { this->id=id; this->type=type; }
         Buffer() { id=0; type=GL_ARRAY_BUFFER; size=0; }
 
-        inline void bind() { glBindBuffer(type, id); }
+        inline void bind() { 
+            if(!is_buffer()) {
+                err_printf("trying to bind a null buffer\n");
+                return;
+            }
+            glBindBuffer(type, id); 
+        }
         inline void unbind() { glBindBuffer(type, 0); }
-        inline void is_buffer() { glIsBuffer(id); }
+        inline bool is_buffer() { return id!=0 || glIsBuffer(id); }
         inline void create() {
             glGenBuffers(1, &id); 
             log_printf("Buffer id: %d created\n",id); 
         }
         inline void delete_buffer() {
-            if(!id) err_printf("trying to delete a null buffer\n");
+            if(!is_buffer()) {
+                err_printf("trying to delete a null buffer\n");
+                return;
+            }
             glDeleteBuffers(1, &id); 
             log_printf("Buffer id: %d deleted\n",id); 
             id=0;
+            size=0;
         }
         inline void set_data(GLsizeiptr size, const GLvoid* data, GLuint usage=GL_STATIC_DRAW) { 
             this->size=size;
             glBufferData(type, size, data, usage);
         }
-    };
+    };/*
     struct AttributePointer {
         public:
         GLuint index=0;
@@ -329,7 +351,7 @@ namespace DGL {
             this->stride=0;
             this->pointer=0;
         }
-    };
+    };*/
     // #define MAX_VERTEX_ATTRIBUTES 8
     class VBO : public  Buffer { 
         public:
@@ -349,10 +371,10 @@ namespace DGL {
         inline void set_vertex_attribute_value(GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w) { glVertexAttrib4f(index, x, y, z, w); }
         inline void set_attribute_pointer(GLuint index, GLint size, GLuint type, GLboolean normalized, GLsizei stride, const GLvoid * pointer) {
             glVertexAttribPointer(index, size, type, normalized, stride, pointer);
-        }
+        }/*
         inline void set_attribute_pointer(AttributePointer p) {
             glVertexAttribPointer(p.index, p.size, p.type, p.normalized, p.stride, p.pointer);
-        }
+        }*/
         /*
         inline void add_attribute_pointer(AttributePointer p) {
             attributes[attribute_count]=p;
@@ -367,9 +389,12 @@ namespace DGL {
         }
         */
         inline void draw(GLsizei count=0,GLuint mode=GL_TRIANGLES,GLint first=0) {
-            if(!id) err_printf("trying to draw with a null buffer\n");
+            if(!is_buffer()) {
+                err_printf("trying to draw with a null buffer\n");
+                return;
+            }
             if(count==0) count=this->size;
-            glDrawArrays(GL_LINES, first, count);
+            glDrawArrays(mode, first, count);
         }
     };
     class EBO : public Buffer {

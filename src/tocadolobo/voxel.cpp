@@ -22,13 +22,11 @@ struct VoxelInfo {
 };
 
 float terrain_altitude(float x, float y) {
-    return perlin2d(x, y, 0.005, 3,SEED_BIOMA);
+    return perlin2d(x+50000, y+50000, 0.005, 3,SEED_BIOMA);
 }
 
 VoxelInfo generate_voxel(int x, int y) {
     VoxelInfo info;
-    x+=1000;
-    y+=1000;
     float h=terrain_altitude(x, y);  
     info.altitude=h;     
     h=h*255;

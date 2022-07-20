@@ -6,7 +6,7 @@ int load_distance=8;
 int mip_distance=10;
 
 #include <algorithm>
-#define CHUNK_SIZE 16
+#define CHUNK_SIZE 32
 #include <memory>
 
 #include "mesh_renderer.hpp"
@@ -31,11 +31,11 @@ class Chunk {
         if(texture.is_texture()) texture.delete_texture();
         loaded=false;
     }
-    inline void load_terrain() {
+    inline void reload_terrain() {
         peak_height=0;
        // printf("chegou aqui load_terrain\n");
       //  if(terrain.id) terrain.delete_buffer(); 
-        Vec3 chunk_pos=global_position();
+        Vec3 globalpos=global_position();
         uint32_t chunk_res=size;
         
         if(texture.is_texture()) texture.delete_texture();
@@ -61,7 +61,7 @@ class Chunk {
 
             auto get_vert=[&](float x, float y) {
                 Vec3 vt=Vec3(x,0,y)*factor*(float)size; // vertice
-                vt.y=terrain_altitude(vt.x+chunk_pos.x+5000,vt.z+chunk_pos.z+5000);
+                vt.y=terrain_altitude(vt.x+globalpos.x,vt.z+globalpos.z);
                // printf("alt %f\n",vt.y);
                 return vt;
             };
@@ -111,82 +111,25 @@ class Chunk {
        // terrain=MeshRenderer::vbo_quad();
        // mesh.clear(); 
     }
-    inline void load(int subdivide=0) {
-        if(loaded && subdivisions==subdivide) return; 
-        load_terrain();
-        subdivisions=subdivide;
-        /*
-        int chunk_divisions=pow(2,subdivisions);
-        if(chunk_divisions>=CHUNK_SIZE/4) chunk_divisions=CHUNK_SIZE/4;
-       // printf("SUBDIVISIONS %d\n",subdivisions);
-
-        int chunk_res=CHUNK_SIZE/chunk_divisions; 
-        int texture_res=chunk_res;
-        chunk_res++;
-
-
-        unload();*/ 
-       // printf("alocatting map..\n"); 
-       /* unsigned char* mapa = new unsigned char[chunk_res*chunk_res];
-        memset(mapa, 0, chunk_res*chunk_res);
-*/
-       // printf("Generating map...\n");
-      /*  int x, y;
-        for(y=0; y<chunk_res; y++) for(x=0; x<chunk_res; x++) {
-            auto voxel=generate_voxel((x*chunk_divisions)+(globalpos.x), (y*chunk_divisions)+(globalpos.z));
-            if(voxel.altitude>peak_height) peak_height=voxel.altitude;
-            mapa[(y * chunk_res + x)] = voxel.altitude*255;
-
-        }
-
-       // printf("Generating vertice buffer...\n");
-        VertexData *vertices= new VertexData[chunk_res*chunk_res*6];
-     
-        int i=0;
-        for(y=0; y<chunk_res-1; y++) for(x=0; x<chunk_res-1; x++) {
-            double prop=1.0/(float)chunk_res;
-            auto pt=Vec2(x, y)*prop;
-            auto get_height=[&](int x,int y) {
-                return (double) mapa[(y * chunk_res + x)]/chunk_divisions;
-            };
-            auto calc_normal=[&](int x,int y) {
-                
-                Vec3 R=Vec3(x-1-(chunk_res/2), get_height(x-1,y), y-(chunk_res/2))*chunk_divisions;  
-                Vec3 L=Vec3(x+1-(chunk_res/2), get_height(x+1,y), y-(chunk_res/2))*chunk_divisions;
-                Vec3 B=Vec3(x-(chunk_res/2), get_height(x,y-1), y-1-(chunk_res/2))*chunk_divisions;  
-                Vec3 T=Vec3(x-(chunk_res/2), get_height(x,y+1), y+1-(chunk_res/2))*chunk_divisions; 
-           
-                return Vec3::cross(R-L, T-B).normalized(); 
-            };
-            auto genv=[&](int x,int y) {
-                VertexData v;
-                v.vertex=Vec3(x-(chunk_res/2), get_height(x,y) , y-(chunk_res/2))*chunk_divisions;
-                v.normal=calc_normal(x,y);
-                v.uv=Vec2(x, y)*prop;
-                return v;
-            }; 
-            vertices[i++]=genv(x,y);
-            vertices[i++]=genv(x+1,y+1);
-            vertices[i++]=genv(x+1,y);
-            vertices[i++]=genv(x,y+1);
-            vertices[i++]=genv(x+1,y+1);
-            vertices[i++]=genv(x,y);
-        }
-        terrain=LOAD_MESH(vertices, chunk_res*chunk_res*6);
-        free(vertices);
-        */
-        /*
+    inline void reload_texture() {
+        if(texture.is_texture()) texture.delete_texture();
+        auto globalpos=global_position();
+        auto texture_res=size;
         CPUTextureBuffer tbuffer(texture_res,texture_res,3); 
         tbuffer.alloc();
 
         for(uint32_t y=0; y<texture_res; y++) for(uint32_t x=0; x<texture_res; x++) {
-            VoxelInfo voxel=generate_voxel((x*chunk_divisions)+(globalpos.x), (y*chunk_divisions)+(globalpos.z));
+            VoxelInfo voxel=generate_voxel(x+(globalpos.x), (y)+(globalpos.z));
             tbuffer.put_pixel_color(x,y,voxel.color);
         } 
         texture= tbuffer.send_to_gpu();
-        tbuffer.free(); 
-        
-        delete [] mapa;*/
+        tbuffer.free();  
+    }
+    inline void load(int subdivide=0) {
+        if(loaded && subdivisions==subdivide) return; 
+        reload_terrain();
+        reload_texture();
+        subdivisions=subdivide;
         loaded=true;
     } 
 };
@@ -217,9 +160,9 @@ void load_chunks(Vec3 player_pos) {
             //std::cout << "chunk X " << x << " Y " << y << std::endl;
 
             float chunk_distance=Vec3::distance(chunk_global_position(x,y),player_pos);
-           int load_level=(int)(chunk_distance/(float)CHUNK_SIZE)/mip_distance;
-           //load_level=0;
-           // int load_level=0;
+            int load_level=(int)(chunk_distance/(float)CHUNK_SIZE)/mip_distance;
+            //load_level=0;
+            // int load_level=0;
             if(chunk_distance>render_distance*CHUNK_SIZE) continue;
             bool has_chunk=false;
             for(auto &ck:chunks) {

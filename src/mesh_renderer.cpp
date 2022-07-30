@@ -20,8 +20,12 @@ namespace MeshRenderer {
         varying vec2 texture_coordinates;
         varying vec3 normal_iterpolated;
         varying vec3 vert_pos;
+        varying vec3 vpos;
         varying vec3 glpos;
-        void main() {
+        varying vec3 Normal;
+       // varying vec3 tPosition;
+        void main() { 
+            vpos = vec3(model_matrix * vec4(a_vertex, 1.0));
             vec4 v = model_view_matrix * vec4(a_vertex, 1.0);
             vert_pos = vec3(v) / v.w;
 
@@ -29,12 +33,16 @@ namespace MeshRenderer {
             glpos=vec3(gl_Position);///gl_Position.w;
             texture_coordinates= a_textcoord;
             normal_iterpolated=a_normal;
+           // vec4 n=model_matrix * vec4(a_normal,1.0);
+
+            
         }
     );
     static const char fragment_shader[]= SHADER_INLINE(
         precision highp float;
         precision highp int;
         uniform sampler2D albedo;
+        uniform samplerCube cubemap;
         uniform vec2 texture_scale;
         uniform vec2 texture_offset;
         uniform vec4 albedo_color;
@@ -47,13 +55,31 @@ namespace MeshRenderer {
         uniform float shininess; 
         uniform float fog_distance; 
         uniform float fog_density;
+        uniform float mirror;
         uniform vec4 fog_color; 
         uniform bool blinn; // Use blinn-phong shading or not
+        uniform vec3 cameraPos;
         varying vec2 texture_coordinates;
         varying vec3 normal_iterpolated;
+        varying vec3 vpos;
         varying vec3 vert_pos;
         varying vec3 glpos;
-        
+        /*
+        vec3 vert(float x,float y) {
+            vec2 tv=texture_coordinates+vec2(x,y);
+            float r=texture2D(albedo,(texture_offset+tv)*texture_scale).z;
+            return vec3(tv.x,r,tv.z);
+        }
+        vec3 norm() {
+            float ff=0.1;   
+            return normalize(cross(
+                    vert(-ff,0.0)-vert(ff,0.0), 
+                    vert(0.0,ff)-vert(0.0,-ff)
+                ));
+        }*/
+        float gray(vec4 c) {
+            return (c.x+c.y+c.z+1.0)/4.0;
+        }
         void main() {            
             bool fog_exponential=false;
             //vec3 lightPos=vec3(0,100,0);
@@ -62,6 +88,7 @@ namespace MeshRenderer {
             vec3 N = normalize(normal_iterpolated);
             vec3 L = normalize(lightDir); //lightPos - vert_pos;
 
+            vec2 uvc=(texture_offset+texture_coordinates)*texture_scale;
             // Lambert's cosine law
             float lambertian = max(dot(N, L), 0.0);
             float specular = 0.0;
@@ -76,12 +103,17 @@ namespace MeshRenderer {
                     specular = pow(max(dot(R, V), 0.0), shininess); 
                 }
             } 
-            vec4 tex_color=texture2D(albedo,(texture_offset+texture_coordinates)*texture_scale)*albedo_color;
+            // vec4 tex_color=vec4(N,1.0); // debug normals
+            vec4 tex_color=texture2D(albedo,uvc)*albedo_color;//vec4(1.0)*gray(texture2D(albedo,uvc));
 
             gl_FragColor = Ka * ambient_color*tex_color +
                                 Kd * lambertian * diffuse_color*tex_color +
                                 Ks * specular * specular_color;
-
+            if(mirror>0.05) { 
+                vec3 VI = normalize(vpos - cameraPos);
+                vec3 VR = reflect(VI, normalize(N));
+              gl_FragColor=mix(gl_FragColor,textureCube(cubemap,VR),length(gl_FragColor));
+            }
             float d_factor=(glpos.z/fog_distance)*fog_density;
             if(d_factor<0.0) d_factor=0.0;
             else if(d_factor>1.0) d_factor=1.0;
@@ -95,16 +127,17 @@ namespace MeshRenderer {
     
     static ShaderProgram shader_program(0);// must be zero uninitialized
 
-    static VBO debug_box(0);
-    static VBO debug_quad(0);
-    static VBO skybox(0);
+    static GPUMesh debug_box;
+    static GPUMesh debug_quad;
+    static GPUMesh skybox;
     
     static GLuint blank_texture;
     static GLuint font_texture;
-    VBO vbo_quad()  { return debug_quad; }
-    VBO vbo_box()   { return debug_box;  }
-    VBO vbo_skybox()   { return skybox;  }
-    inline bool draw_call(VBO vbo,Mat4 model_matrix,Mat4 view_matrix,Mat4 projection_matrix,Material material,Camera camera) {
+    
+    GPUMesh mesh_quad()  { return debug_quad; }
+    GPUMesh mesh_box()   { return debug_box;  }
+    GPUMesh mesh_skybox()   { return skybox;  }
+    inline bool draw_call(GPUMesh mesh,Mat4 model_matrix,Mat4 view_matrix,Mat4 projection_matrix,Material material,Camera camera) {
        
         Mat4 model_view_matrix=model_matrix*view_matrix; 
         Mat4 model_view_projection_matrix=(projection_matrix*view_matrix)*model_matrix;
@@ -113,7 +146,13 @@ namespace MeshRenderer {
        shader_program.use(); 
         if(material.albedo.id) material.albedo.bind();
         else glBindTexture(GL_TEXTURE_2D, blank_texture);
-        
+
+        if(material.cubemap.is_cubemap) {
+            material.cubemap.bind(1);
+          //  printf("bindoq %d \n",material.cubemap.id);
+        }
+        shader_program.uniform("albedo",0);
+        shader_program.uniform("cubemap",1);
         shader_program.uniform_mat4("model_matrix",model_matrix);
         shader_program.uniform_mat4("view_matrix",view_matrix); 
         shader_program.uniform_mat4("projection_matrix",projection_matrix);
@@ -122,6 +161,7 @@ namespace MeshRenderer {
         shader_program.uniform_mat4("model_view_projection_matrix",model_view_projection_matrix);
 
         shader_program.uniform_vec2("texture_offset",material.texture_offset);
+        shader_program.uniform_vec3("cameraPos",camera.position);
         shader_program.uniform_vec2("texture_scale",material.texture_scale);
         shader_program.uniform_color("ambient_color",material.ambient_color);
         shader_program.uniform_color("diffuse_color",material.diffuse_color);
@@ -135,14 +175,16 @@ namespace MeshRenderer {
         shader_program.uniform_color("fog_color",camera.fog_color);
         shader_program.uniform("fog_density",camera.fog_density);
         shader_program.uniform("fog_distance",(float)camera.far);
+        shader_program.uniform("mirror",(float)material.mirror);
 
         
         
-        vbo.bind();
-
+        //vbo.bind();
         GLint vertex_attr=shader_program.attribute_location("a_vertex");
         GLint normal_attr=shader_program.attribute_location("a_normal");
         GLint uv_attr=shader_program.attribute_location("a_textcoord");
+
+        mesh.vbo.bind();
 
         glEnableVertexAttribArray(vertex_attr);
         glEnableVertexAttribArray(normal_attr);
@@ -152,25 +194,25 @@ namespace MeshRenderer {
         glVertexAttribPointer(normal_attr, 3, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData,normal));
         glVertexAttribPointer(uv_attr, 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData,uv));
         
-        vbo.draw(); 
+        mesh.draw();
 
         glDisableVertexAttribArray(vertex_attr);
         glDisableVertexAttribArray(normal_attr);
         glDisableVertexAttribArray(uv_attr);
-        vbo.unbind();
+        mesh.vbo.unbind();
         shader_program.unbind();
         return true;
     } 
-    bool draw(VBO vbo, Mat4 model_matrix,Camera camera,Material material) {
+    bool draw(GPUMesh mesh, Mat4 model_matrix,Camera camera,Material material) {
         
-        if(!vbo.id || !vbo.is_buffer()) {
-            printf("tryng to draw a null buffer\n");
+        if(!mesh.is_valid()) {
+            printf("tryng to draw a null gpumesh\n");
             return false;
         }
         
         Mat4 view_matrix=camera.view_matrix;
         Mat4 projection_matrix=camera.projection_matrix();
-        return draw_call(vbo,model_matrix,view_matrix,projection_matrix,material,camera);
+        return draw_call(mesh,model_matrix,view_matrix,projection_matrix,material,camera);
         //if(!bbox_verts.to_screen_space(model_view_projection_matrix).inside_screen()) return ;
         
         /*auto t_draw=[&]() {*/ 
@@ -186,7 +228,7 @@ namespace MeshRenderer {
         //rot=rot.translated(-rot.translation());
         //Mat4 rot=Mat4::rotation_old((model.translation()).normalized());
         
-        return draw_call(vbo_quad(),rot*model,view_matrix,projection_matrix,material,camera);
+        return draw_call(mesh_quad(),rot*model,view_matrix,projection_matrix,material,camera);
 
     }  
     void init() {
@@ -205,7 +247,7 @@ namespace MeshRenderer {
         glDisable(GL_DEPTH_TEST); 
         Mat4 v=view_matrix;
         v.m[3][0]=v.m[3][1]=v.m[3][2]=0; 
-        draw_call(vbo_skybox(),Mat4().rotated(0,skybox_yaw,0).translated(0,skybox_y,0),v,projection_matrix(),skybox,*this);
+        draw_call(mesh_skybox(),Mat4().rotated(0,skybox_yaw,0).translated(0,skybox_y,0),v,projection_matrix(),skybox,*this);
 
         if(mode==CameraMode::CAMERA_3D) glEnable(GL_DEPTH_TEST);
     }

@@ -30,7 +30,7 @@ class FPSCamera {
         // movimento
         Vec2 mov_axis=Input::axis()*3*_speed;
         pos+= Mat4().translated(Vec3(mov_axis.x,0,-mov_axis.y)).rotated(rotation.y, rotation.x, 0).translation();
-
+        camera.position=pos;
         camera.draw_viewport();
         camera.view_matrix=
         Mat4::mul(

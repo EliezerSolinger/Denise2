@@ -1,18 +1,19 @@
 
 #include "../glhelpers.hpp"
 
-int render_distance=5; 
-int load_distance=8;
+int render_distance=20; 
+int load_distance=30;
 int mip_distance=10;
 
 #include <algorithm>
-#define CHUNK_SIZE 32
+#define CHUNK_SIZE 16
 #include <memory>
 
 #include "mesh_renderer.hpp"
+
 class Chunk {
     public: 
-    DGL::VBO terrain;
+    DGL::GPUMesh terrain;
     DGL::Texture texture;
     int32_t pos_x=0, pos_y=0;
     uint32_t subdivisions=0;
@@ -25,7 +26,7 @@ class Chunk {
 
     inline void unload() {
         if(!loaded) return;
-        if(terrain.is_buffer()) terrain.delete_buffer();
+        if(terrain.is_valid()) terrain.delete_buffers();
         if(texture.is_texture()) texture.delete_texture();
         loaded=false;
     }
@@ -36,7 +37,7 @@ class Chunk {
         Vec3 globalpos=global_position();
         uint32_t chunk_res=(CHUNK_SIZE/2)+1;
         
-        if(terrain.is_buffer()) terrain.delete_buffer();
+        if(terrain.is_valid()) terrain.delete_buffers();
 
         MeshRenderer::Mesh mesh;
         mesh.vertices.resize(chunk_res*chunk_res);
@@ -55,7 +56,7 @@ class Chunk {
 
             auto vert=[&](float _x, float _y) {
                 Vec3 vt=Vec3(_x,0,_y)*factor*(float)CHUNK_SIZE; 
-                vt.y=terrain_altitude(vt.x+globalpos.x,vt.z+globalpos.z)-0.5; 
+                vt.y=(terrain_altitude(vt.x+globalpos.x,vt.z+globalpos.z)-0.5)*100; 
                 return vt;
             };
            
@@ -106,7 +107,7 @@ class Chunk {
             VoxelInfo voxel=generate_voxel(x+(globalpos.x), (y)+(globalpos.z));
             tbuffer.put_pixel_color(x,y,voxel.color);
         } 
-        texture= tbuffer.send_to_gpu();
+        texture= Texture::LOAD_FROM_BUFFER(tbuffer);
         tbuffer.free();  
     }
     inline void load(int subdivide=0) {

@@ -25,7 +25,7 @@ int main (int argc, char *argv[]) {
     MeshRenderer::init();
     Camera camera=Camera();
     camera.setup2D();
-    VBO box=vbo_box();
+    GPUMesh box=mesh_box();
     Material material=Material();
     FPSCamera::init();
     while(update()) {

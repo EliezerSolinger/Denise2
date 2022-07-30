@@ -11,9 +11,9 @@ namespace MeshRenderer {
     using namespace DGL;
     using namespace DSystem; 
 
-    VBO vbo_quad();
-    VBO vbo_box();
-    VBO vbo_skybox();
+    GPUMesh mesh_quad();
+    GPUMesh mesh_box();
+    GPUMesh mesh_skybox();
 
     /** VBO VERTICE GPU FORMAT */
     struct VertexData {  Vec3 vertex, normal; Vec2 uv;  };
@@ -25,13 +25,20 @@ namespace MeshRenderer {
     inline Texture LOAD_TEXTURE(std::string path,bool smoth=true,bool mipmap=true) {
         auto img = VFS::load_jpeg(path);
         auto buff =CPUTextureBuffer::FROM_POINTER(img.width,img.height,img.channels,img.data);
-        Texture t=buff.send_to_gpu(smoth,mipmap);
+        Texture t=Texture::LOAD_FROM_BUFFER(buff,smoth,mipmap);
         //img.free_pointer(); // na verdade é o mesmo ponteiro
         buff.free(); // porque ele nao copia o ponteiro apenas o reinterpreta
         return t;
     }
-
-    inline VBO LOAD_MESH(VertexData*data,unsigned int vertices_count) {
+    inline Texture LOAD_CUBEMAP(std::string path,bool smoth=true,bool mipmap=false) {
+        auto img = VFS::load_jpeg(path);
+        auto buff =CPUTextureBuffer::FROM_POINTER(img.width,img.height,img.channels,img.data);
+        Texture t=Texture::LOAD_CUBEMAP_FROM_BUFFER(buff,smoth,mipmap);
+        //img.free_pointer(); // na verdade é o mesmo ponteiro
+        buff.free(); // porque ele nao copia o ponteiro apenas o reinterpreta
+        return t;
+    }
+    inline GPUMesh LOAD_MESH(VertexData*data,unsigned int vertices_count) {
         #ifdef DEBUG
             printf("Loading mesh with %d vertices...\n",vertices_count);
         #endif
@@ -41,7 +48,7 @@ namespace MeshRenderer {
         vbo.bind();
         vbo.set_data(sizeof(VertexData)*vertices_count,data);
         vbo.unbind(); 
-        return vbo;
+        return GPUMesh::FROM_VBO(vbo);
     }
 
     class Mesh {
@@ -50,7 +57,8 @@ namespace MeshRenderer {
         std::vector<Vec3> normals;
         std::vector<Vec2> uvs; 
         std::vector<MeshTriangle> triangles;  // triangle indexes starting in 1
-        inline VBO send_to_gpu() {
+
+        inline GPUMesh send_to_gpu() {
            // printf("%d triangles \n",triangles.size());
             VertexData* data=new VertexData[triangles.size()*3];
             for(uint32_t t=0; t<triangles.size(); t++) {
@@ -62,9 +70,9 @@ namespace MeshRenderer {
                     data[vp].uv=triangle.uv ? uvs[triangle.uv-1] : Vec2(0,0); 
                 }
             }
-            VBO vbo=LOAD_MESH(data,triangles.size()*3);
+            GPUMesh mesh=LOAD_MESH(data,triangles.size()*3);
             delete[] data;
-            return vbo;
+            return mesh;
         }
         inline void clear() {
             vertices.clear();
@@ -77,16 +85,19 @@ namespace MeshRenderer {
 
     struct Material { 
         Texture albedo=Texture(0);
+        Texture cubemap=Texture(0);
         Vec2 texture_scale=Vec2(1,1); 
         Vec2 texture_offset=Vec2(0,0);
         Color albedo_color=Color(1,1,1,1);
         Color ambient_color=Color(0.9,0.9,0.9,1);
         Color diffuse_color=Color(1,1,1,1); 
         Color specular_color=Color(1,1,1,1);
-        float Ka=1;   // Ambient reflection coefficient
-        float Kd=1;   // Diffuse reflection coefficient
-        float Ks=1;   // Specular reflection coefficient
+
+        float Ka=1.0f;   // Ambient reflection coefficient
+        float Kd=1.0f;   // Diffuse reflection coefficient
+        float Ks=1.0f;   // Specular reflection coefficient
         float shininess=8.0f;  
+        float mirror=0.0f;
         bool blinn=true;
         Material() {   }
         inline void opaque() {Ks=0;shininess=1;}
@@ -100,6 +111,7 @@ namespace MeshRenderer {
     
     class Camera {
         public:
+        Vec3 position; // for cubemap calculations
         CameraMode mode;
         bool fix_aspect, is_perspective;
         double fov, near, far, aspect,
@@ -198,7 +210,7 @@ namespace MeshRenderer {
         void draw_skybox();
     };
 
-    bool draw(const VBO vbo,Mat4 matrix,Camera camera,Material material);
+    bool draw(const GPUMesh vbo,Mat4 matrix,Camera camera,Material material);
     bool draw_sprite(Mat4 matrix,Vec3 camera_pos,Camera camera,Material material);
     void init();
 }

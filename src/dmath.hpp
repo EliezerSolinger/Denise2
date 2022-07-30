@@ -66,6 +66,27 @@ namespace DMath {
         static inline Color BROWN()     { return Color(0.5,0.25,0,1); }
         static inline Color LIME()      { return Color(0,1,0,1); }
     };
+    class ByteColor {
+        public: uint8_t r,g,b,a;
+        ByteColor() { r = g = b = a = 255; }
+        ByteColor(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha=255) { r = red; g = green; b = blue; a = alpha; }
+        static inline ByteColor WHITE()     { return ByteColor(255,255,255,255); }
+        static inline ByteColor BLACK()     { return ByteColor(0,0,0,255); }
+        static inline ByteColor RED()       { return ByteColor(255,0,0,255); }
+        static inline ByteColor GREEN()     { return ByteColor(0,255,0,255); }
+        static inline ByteColor BLUE()      { return ByteColor(0,0,255,255); }
+        static inline ByteColor YELLOW()    { return ByteColor(255,255,0,255); }
+        static inline ByteColor CYAN()      { return ByteColor(0,255,255,255); }
+        static inline ByteColor MAGENTA()   { return ByteColor(255,0,255,255); }
+        static inline ByteColor GRAY()      { return ByteColor(128,128,128,255); }
+        static inline ByteColor LIGHT_GRAY(){ return ByteColor(192,192,192,255); }
+        static inline ByteColor DARK_GRAY() { return ByteColor(64,64,64,255); }
+        static inline ByteColor ORANGE()    { return ByteColor(255,128,0,255); }
+        static inline ByteColor PURPLE()    { return ByteColor(128,0,128,255); }
+        static inline ByteColor PINK()      { return ByteColor(255,192,192,255); }
+        static inline ByteColor BROWN()     { return ByteColor(128,64,0,255); }
+        static inline ByteColor LIME()      { return ByteColor(0,255,0,255); }
+    };
 
     /** EXPERIMENTAL THIS MAY NOT WORK PROPERLY*/
     static inline float cos_from_sin(float sin, float angle) { 
@@ -149,7 +170,10 @@ namespace DMath {
         static inline float distance(Vec3 a,Vec3 b) { return (a-b).magnitude(); }
     };
 
-
+    struct Vec2i { 
+        int32_t x;
+        int32_t y;
+    };
     class Vec2 {
         public: float x, y;
         public: Vec2() { x = y = 0; }

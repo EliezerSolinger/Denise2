@@ -38,7 +38,7 @@ Texture load_grid_texture() {
             Color(0,0,0,(x%grid_distance==0 || y%grid_distance==0) ? 1.f : 0.f )
         ); 
     }  
-    Texture texture=buffer.send_to_gpu();
+    Texture texture=Texture::LOAD_FROM_BUFFER(buffer);
     buffer.free();         
     return texture; 
 }
@@ -49,7 +49,7 @@ Texture load_perlin_texture(uint32_t texture_res=32,float freq=0.4, uint32_t dep
     for(int y=0; y<texture_res; y++) for(int x=0; x<texture_res; x++) {  
         buffer.put_pixel_color(x,y,float_to_byte(perlin2d(x, y, freq, depth,seed))); 
     }  
-    Texture texture=buffer.send_to_gpu(true,true);
+    Texture texture=Texture::LOAD_FROM_BUFFER(buffer,true,true);
     buffer.free();        
     return texture; 
 }
@@ -63,12 +63,13 @@ int main() {
     MeshRenderer::init();
    
     Camera camera=Camera();
-    VBO quad=vbo_quad();
-    VBO box=vbo_box();
+    GPUMesh quad=mesh_quad();
+    GPUMesh box=mesh_box();
     fpscamera.init(); 
 
     printf("chegou aqui 1\n");
     fpscamera.camera.skybox.albedo=MeshRenderer::LOAD_TEXTURE("skybox2.jpg",true);
+
     printf("chegou aqui 2\n");
     Material material=Material(); 
     material.opaque();
@@ -84,7 +85,10 @@ int main() {
     water.Kd=0.2;
     water.albedo=MeshRenderer::LOAD_TEXTURE("water1.jpg",true);
     water.texture_scale=Vec2(2000.f,2000.f);
-    
+    water.cubemap=MeshRenderer::LOAD_CUBEMAP("skybox2.jpg",true);
+    //water.cubemap=fpscamera.camera.skybox.albedo;
+    //water.cubemap=MeshRenderer::LOAD_CUBEMAP("skybox2.jpg",true);
+   
     Material grid;
     grid.albedo=load_grid_texture();
     grid.opaque();
@@ -94,7 +98,9 @@ int main() {
     load_chunks(fpscamera.pos);
     fpscamera.camera.skybox_y=0.05;
     fpscamera.camera.skybox_yaw=0.5;
+    fpscamera.camera.fog_density=6;
     int timerx=0;
+    water.mirror=0.4;
     while(update()) {
         
         fpscamera.camera.skybox_yaw=Time::elapsed()/300.0;
@@ -125,13 +131,13 @@ int main() {
            // if(chunk_distance>render_distance*CHUNK_SIZE) continue;
           //  if(Vec3::distance(ck.global_position(),Vec3(player_pos.x,0,player_pos.z))>render_distance*CHUNK_SIZE) continue;
             if(!ck.loaded) continue;
-           // if(ck.peak_height<0.5725490196) continue;
+            if(ck.peak_height<0.5725490196) continue;
             material.albedo=ck.texture.id;
             auto ckpos=ck.global_position();
-           /* if(
-                (fpscame0999999999ra.camera.view_matrix*ckpos).z>CHUNK_SIZE
-            ) continue;*/
-            Mat4 model_m=Mat4().scaled(1,100,1).translated(ckpos.x,-6,ckpos.z);
+            if(
+                (fpscamera.camera.view_matrix*ckpos).z>CHUNK_SIZE
+            ) continue;
+            Mat4 model_m=Mat4().translated(ckpos.x,-6,ckpos.z);
            // draw(box,model_m*ck.terrain.bound_box.matrix(),fpscamera.camera,grid); 
             if(draw(ck.terrain,model_m,fpscamera.camera,material)) { chunks_drawed++; }
         }

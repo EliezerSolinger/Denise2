@@ -1,6 +1,5 @@
  
 
-- refatorar codigo dos chunks - hoje
 - frustrum culling e occlusion culling - em desenvolvimento
 
 
@@ -20,3 +19,6 @@
 - skybox  -OK
 - fog OK
 - traduzir todo o código restante  para o wrapper glhelper..  OK
+
+
+- refatorar codigo dos chunks - OK

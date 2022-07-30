@@ -153,13 +153,14 @@ namespace MeshRenderer {
         glVertexAttribPointer(uv_attr, 2, GL_FLOAT, GL_FALSE, sizeof(VertexData), (void*)offsetof(VertexData,uv));
         
         vbo.draw(); 
+
         glDisableVertexAttribArray(vertex_attr);
         glDisableVertexAttribArray(normal_attr);
         glDisableVertexAttribArray(uv_attr);
         vbo.unbind();
         shader_program.unbind();
         return true;
-    }
+    } 
     bool draw(VBO vbo, Mat4 model_matrix,Camera camera,Material material) {
         
         if(!vbo.id || !vbo.is_buffer()) {
@@ -172,15 +173,22 @@ namespace MeshRenderer {
         return draw_call(vbo,model_matrix,view_matrix,projection_matrix,material,camera);
         //if(!bbox_verts.to_screen_space(model_view_projection_matrix).inside_screen()) return ;
         
-        /*auto t_draw=[&]() {*/
-      
+        /*auto t_draw=[&]() {*/ 
         // printf("%d\n",vbo.vertices_count);
         /*};
-        t_draw();*/
-       
+        t_draw();*/ 
         /***/
     }  
-    
+    bool draw_sprite(Mat4 model,Vec3 camera_pos,Camera camera,Material material) { 
+        Mat4 view_matrix=camera.view_matrix;
+        Mat4 projection_matrix=camera.projection_matrix();
+        Mat4 rot=Mat4::from_dir(-camera_pos.normalized());
+        //rot=rot.translated(-rot.translation());
+        //Mat4 rot=Mat4::rotation_old((model.translation()).normalized());
+        
+        return draw_call(vbo_quad(),rot*model,view_matrix,projection_matrix,material,camera);
+
+    }  
     void init() {
         printf("initializing renderer shaders\n");
         shader_program=DGL::ShaderProgram::compile_shaders_and_link_program(vertex_shader,fragment_shader);

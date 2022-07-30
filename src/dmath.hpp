@@ -130,10 +130,11 @@ namespace DMath {
         inline Color to_color() { return Color(x,y,z,1.0f);}
         static inline Vec3 cross(Vec3 a,Vec3 b ) {
             return Vec3(
-                a.y * b.z - a.z * b.y, 
-                a.z * b.x - a.x * b.z,
-                a.x * b.y - a.y * b.x);
-        }
+                    a.y * b.z - a.z * b.y, 
+                    a.z * b.x - a.x * b.z,
+                    a.x * b.y - a.y * b.x
+            );
+        } 
         static inline Vec3 ZERO() { return Vec3(0, 0, 0); }
         static inline Vec3 UNIT() { return Vec3(1, 1, 1); }
         static inline Vec3 X() { return Vec3(1, 0, 0); }
@@ -246,8 +247,20 @@ namespace DMath {
                 m2.m[3][0] * m1.m[0][3] + m2.m[3][1] * m1.m[1][3] + m2.m[3][2] * m1.m[2][3] + m2.m[3][3] * m1.m[3][3] 
             );
         } 
+        static inline Mat4 from_dir(Vec3 v)  {
+            /* Find cos theta and sin theta */
+            float c1 = sqrt(v.x * v.x + v.y * v.y);
+            float s1 = v.z;
+            /* Find cosθ and sinθ; if gimbal lock, choose (1,0) arbitrarily */
+            float c2 = c1 ? v.x / c1 : 1.0;
+            float s2 = c1 ? v.y / c1 : 0.0;
 
-        static inline Mat4 rotation(Vec3 angle) {
+            return Mat4(v.x, -s2, -s1*c2, 0,
+                        v.y,  c2, -s1*s2, 0,
+                        v.z,   0,     c1, 0,
+                        0 ,    0,  0    , 1).transpose();
+        }
+        static inline Mat4 from_rotation(Vec3 angle) {
             Mat4 mat=Mat4::IDENTITY();
             float sinX = sinf(angle.x);
             float cosX = cos_from_sin(sinX,angle.x);
@@ -352,7 +365,8 @@ namespace DMath {
                 0, 0, 0, 1
             );
         }
-        static inline Mat4 lookAt(Vec3 eye, Vec3 center, Vec3 up) {
+        static inline Mat4 lookAt(Vec3 eye, Vec3 center) {
+            Vec3 up=Vec3(0,1,0);
             Vec3 f = (center - eye).normalized();
             Vec3 s = Vec3::cross(f,up).normalized();
             Vec3 u = Vec3::cross(s,f);
@@ -392,13 +406,13 @@ namespace DMath {
         }
         inline Mat4 scaled(Vec3 v) const {return scaled(v.x, v.y, v.z);}
         inline Mat4 scaled(float s) const {return scaled(s, s, s);}
-        inline Mat4 rotated(Vec3 v) const {return mul(rotation(v),*this);}
+        inline Mat4 rotated(Vec3 v) const {return mul(from_rotation(v),*this);}
         inline Mat4 rotated(float x,float y,float z) const {return rotated(Vec3(x,y,z));}
         inline Mat4 rotated(float s) const {return rotated(0,0,s);}
         inline Vec3 translation() const {return Vec3(m[3][0], m[3][1], m[3][2]);}
         inline Vec2 translation2D() const {return Vec2(m[3][0], m[3][1]);}
         inline Vec3 axis() const {return Vec3(m[0][0], m[1][0], m[2][0]);}
-        inline Vec3 scale() const {return Vec3(m[0][0], m[1][1], m[2][2]);}
+        inline Vec3 scale() const {return Vec3(m[0][0], m[1][1], m[2][2]);} 
 
 
         Mat4 operator*(const Mat4& m) const { return Mat4::mul(*this,m); }

@@ -17,9 +17,7 @@ class Chunk {
     int32_t pos_x=0, pos_y=0;
     uint32_t subdivisions=0;
     float peak_height=-1000;
-    bool loaded=false; 
-    uint32_t size=32;
-
+    bool loaded=false;  
     
     inline Vec3 global_position() {
         return Vec3(pos_x,0,pos_y)*CHUNK_SIZE;
@@ -36,9 +34,9 @@ class Chunk {
        // printf("chegou aqui load_terrain\n");
       //  if(terrain.id) terrain.delete_buffer(); 
         Vec3 globalpos=global_position();
-        uint32_t chunk_res=size;
+        uint32_t chunk_res=(CHUNK_SIZE/2)+1;
         
-        if(texture.is_texture()) texture.delete_texture();
+        if(terrain.is_buffer()) terrain.delete_buffer();
 
         MeshRenderer::Mesh mesh;
         mesh.vertices.resize(chunk_res*chunk_res);
@@ -48,73 +46,59 @@ class Chunk {
 
         auto get_index=[&](uint32_t x,uint32_t y) {return (y*chunk_res)+x;};
         
-        //DGL::CPUTextureBuffer t(chunk_res,chunk_res,1);
-        //t.alloc();
-        
-        float factor=(1.0/chunk_res);
+        float factor=(1.0/(chunk_res-1));
         for(auto y=0;y<chunk_res;y++) 
-        for(auto x=0;x<chunk_res;x++) {
-            //std::cout << "printando " << x << "x" << y << std::endl;
+         for(auto x=0;x<chunk_res;x++) { 
             auto idx=get_index(x,y); //index
             
            mesh.uvs[idx]=Vec2(x,y)*factor; // texture coordinate
 
-            auto get_vert=[&](float x, float y) {
-                Vec3 vt=Vec3(x,0,y)*factor*(float)size; // vertice
-                vt.y=terrain_altitude(vt.x+globalpos.x,vt.z+globalpos.z);
-               // printf("alt %f\n",vt.y);
+            auto vert=[&](float _x, float _y) {
+                Vec3 vt=Vec3(_x,0,_y)*factor*(float)CHUNK_SIZE; 
+                vt.y=terrain_altitude(vt.x+globalpos.x,vt.z+globalpos.z)-0.5; 
                 return vt;
             };
            
-            auto vert=get_vert(x,y);
-           // printf("varrendo %f,%f,%f \n",vert.x,vert.y,vert.z);
-            if(vert.y>peak_height) peak_height=vert.y;
-            mesh.vertices[idx]=vert; 
-            
-            Vec3 R=get_vert(x-1,y);
-            Vec3 L=get_vert(x+1,y);
-            Vec3 B=get_vert(x,y-1);  
-            Vec3 T=get_vert(x,y+1);  
-            Vec3 n=Vec3::cross(R-L, T-B).normalized();
-            mesh.normals[idx]=n;  
-            
-            //Vec3 vt=get_vert(x,y); // vertice
-         //   t.put_pixel_color(x,y, n.to_color());
-        }
-       // texture=t.send_to_gpu();
-        //t.free();
-        
+            auto v=vert(x,y); 
+            if(v.y>peak_height) peak_height=v.y;
+            mesh.vertices[idx]=v; 
+              
+            mesh.normals[idx]=
+                Vec3::cross(
+                    vert(x-1,y)-vert(x+1,y), 
+                    vert(x,y+1)-vert(x,y-1)
+                ).normalized();
+
+        } 
        
         mesh.triangles.resize((chunk_res-1)*(chunk_res-1)*2); 
         
-        auto get_index_tri=[&](uint32_t x,uint32_t y) {return (y*(chunk_res-1))+x;};
+        auto get_index_tri=[&](uint32_t _x,uint32_t _y) {return (_y*(chunk_res-1))+_x;};
 
         for(auto y=0;y<chunk_res-1;y++) for(auto x=0;x<chunk_res-1;x++)  { 
-           // std::cout << "indexando  " << x << "x" << y << std::endl;
+            //std::cout << "indexando  " << x << "x" << y << std::endl;
             auto idx=get_index_tri(x,y);
             // triangle zero of this quad
             uint32_t vt1=get_index(x,y)+1;
             uint32_t vt2=get_index(x+1,y)+1;
             uint32_t vt3=get_index(x,y+1)+1;
             mesh.triangles[idx*2]={{{vt1,vt1,vt1},{vt2,vt2,vt2},{vt3,vt3,vt3}}};
-            //std::cout << "indexando 2 tri  " << x << "x" << y << std::endl;
+            //std::cout << "indexando 2 tri  " << x << "x" 677777777777777777777777777777777777777777777777700000000000000<< y << std::endl;
 
             vt1=get_index(x,y+1)+1;
             vt2=get_index(x+1,y)+1;
             vt3=get_index(x+1,y+1)+1;
             mesh.triangles[(idx*2)+1]={{{vt1,vt1,vt1},{vt2,vt2,vt2},{vt3,vt3,vt3}}};
 
-        }
-        
+        } 
         //std::cout << "criando mesha  " << std::endl;
         terrain=mesh.send_to_gpu();
-       // terrain=MeshRenderer::vbo_quad();
-       // mesh.clear(); 
+        mesh.clear(); 
     }
     inline void reload_texture() {
         if(texture.is_texture()) texture.delete_texture();
         auto globalpos=global_position();
-        auto texture_res=size;
+        auto texture_res=CHUNK_SIZE;
         CPUTextureBuffer tbuffer(texture_res,texture_res,3); 
         tbuffer.alloc();
 

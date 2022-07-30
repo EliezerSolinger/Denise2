@@ -129,9 +129,9 @@ int main() {
             material.albedo=ck.texture.id;
             auto ckpos=ck.global_position();
            /* if(
-                (fpscamera.camera.view_matrix*ckpos).z>CHUNK_SIZE
+                (fpscame0999999999ra.camera.view_matrix*ckpos).z>CHUNK_SIZE
             ) continue;*/
-            Mat4 model_m=Mat4().scaled(1,50,1).translated(ckpos.x,-25,ckpos.z);
+            Mat4 model_m=Mat4().scaled(1,100,1).translated(ckpos.x,-6,ckpos.z);
            // draw(box,model_m*ck.terrain.bound_box.matrix(),fpscamera.camera,grid); 
             if(draw(ck.terrain,model_m,fpscamera.camera,material)) { chunks_drawed++; }
         }
@@ -139,8 +139,8 @@ int main() {
         water.texture_offset.y=cos(Time::elapsed()*0.005)*0.01;
  
         // printf("%f\n",delta());
-        draw(box,Mat4().scaled(CHUNK_SIZE*100,1,CHUNK_SIZE*100).translated(CHUNK_SIZE/2,-22,CHUNK_SIZE/2),fpscamera.camera,water);
-      
+        draw(box,Mat4().scaled(CHUNK_SIZE*200,1,CHUNK_SIZE*200).translated(CHUNK_SIZE/2,0,CHUNK_SIZE/2),fpscamera.camera,water);
+        draw_sprite(Mat4().scaled(10),fpscamera.pos,fpscamera.camera,water);
         if(Input::pressed(Input::X)) {
             std::cout << "player chunk X " << player_to_chunk_coord(fpscamera.pos.x)
                                     << " Y " << player_to_chunk_coord(fpscamera.pos.z) 

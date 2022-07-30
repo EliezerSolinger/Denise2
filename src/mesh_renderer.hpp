@@ -199,6 +199,7 @@ namespace MeshRenderer {
     };
 
     bool draw(const VBO vbo,Mat4 matrix,Camera camera,Material material);
+    bool draw_sprite(Mat4 matrix,Vec3 camera_pos,Camera camera,Material material);
     void init();
 }
 #endif

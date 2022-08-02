@@ -101,6 +101,9 @@ int main() {
     fpscamera.camera.fog_density=6;
     int timerx=0;
     water.mirror=0.4;
+    //material.mirror=0.3;
+    //material.Ks=0.7;
+   /// material.shininess=20;
     while(update()) {
         
         fpscamera.camera.skybox_yaw=Time::elapsed()/300.0;

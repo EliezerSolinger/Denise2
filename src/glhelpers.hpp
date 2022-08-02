@@ -142,6 +142,26 @@ namespace DGL {
             }
             return quad;
         }
+        inline void flip_vertically() {
+            for(uint32_t i=0;i<width;i++) {
+                for(uint32_t j=0;j<height/2;j++) {
+                    auto c1=get_pixel(i,j);
+                    auto c2=get_pixel(i,height-j-1);
+                    put_pixel(i,j,c2);
+                    put_pixel(i,height-j-1,c1);
+                }
+            }
+        }
+        inline void flip_horizontally() {
+            for(uint32_t i=0;i<height;i++) {
+                for(uint32_t j=0;j<width/2;j++) {
+                    auto c1=get_pixel(j,i);
+                    auto c2=get_pixel(width-j-1,i);
+                    put_pixel(j,i,c2);
+                    put_pixel(width-j-1,i,c1);
+                }
+            }
+        }
         inline CPUTextureBuffer resized(uint32_t w,uint32_t h,uint32_t channels=4) {
             auto img=CPUTextureBuffer(w,h,channels);
             img.alloc();
@@ -266,12 +286,12 @@ namespace DGL {
                 return resized; 
             };
             std::map<uint32_t,DMath::Vec2i> coordinates={
+                {GL_TEXTURE_CUBE_MAP_POSITIVE_X,{2,1}},
                 {GL_TEXTURE_CUBE_MAP_NEGATIVE_X,{0,1}},
-                {GL_TEXTURE_CUBE_MAP_POSITIVE_X,{3,1}},
-                {GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,{1,2}},
                 {GL_TEXTURE_CUBE_MAP_POSITIVE_Y,{1,0}},
-                {GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,{1,1}},
-                {GL_TEXTURE_CUBE_MAP_POSITIVE_Z,{1,2}},
+                {GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,{1,2}},
+                {GL_TEXTURE_CUBE_MAP_POSITIVE_Z,{1,1}},
+                {GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,{3,1}},
             };
             Texture texture;
             texture.create_cubemap();

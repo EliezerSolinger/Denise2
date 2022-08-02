@@ -109,10 +109,12 @@ namespace MeshRenderer {
             gl_FragColor = Ka * ambient_color*tex_color +
                                 Kd * lambertian * diffuse_color*tex_color +
                                 Ks * specular * specular_color;
+            // cubemap reflection
             if(mirror>0.05) { 
                 vec3 VI = normalize(vpos - cameraPos);
-                vec3 VR = reflect(VI, normalize(N));
-              gl_FragColor=mix(gl_FragColor,textureCube(cubemap,VR),length(gl_FragColor));
+                vec3 VR = reflect(VI, N);
+                vec4 ccolor=textureCube(cubemap,normalize(-VR));
+              gl_FragColor=mix(gl_FragColor,ccolor,mirror);
             }
             float d_factor=(glpos.z/fog_distance)*fog_density;
             if(d_factor<0.0) d_factor=0.0;

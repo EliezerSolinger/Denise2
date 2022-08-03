@@ -6,7 +6,6 @@
 #include <stdio.h>
 
 
-
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -99,6 +98,7 @@ int main() {
     fpscamera.camera.skybox_y=0.05;
     fpscamera.camera.skybox_yaw=0.5;
     fpscamera.camera.fog_density=6;
+    fpscamera.camera.fog_color=Color(0.05,0.06,0.1,1);
     int timerx=0;
     water.mirror=0.4;
     //material.mirror=0.3;
@@ -106,7 +106,7 @@ int main() {
    /// material.shininess=20;
     while(update()) {
         
-        fpscamera.camera.skybox_yaw=Time::elapsed()/300.0;
+        fpscamera.camera.skybox_yaw=DEG_TO_RAD*90;;//Time::elapsed()/300.0;
         //camera.draw_viewport();
         fpscamera.update();
         fpscamera.camera.draw_skybox();

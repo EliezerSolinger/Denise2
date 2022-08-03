@@ -41,13 +41,16 @@ namespace MeshRenderer {
     static const char fragment_shader[]= SHADER_INLINE(
         precision highp float;
         precision highp int;
-        uniform sampler2D albedo;
+        uniform sampler2D diffuse;
         uniform samplerCube cubemap;
+        uniform bool has_cubemap;
+        uniform sampler2D specular_map;
+        uniform bool has_specular_map;
         uniform vec2 texture_scale;
         uniform vec2 texture_offset;
-        uniform vec4 albedo_color;
+        uniform vec4 diffuse_color;
         uniform vec4 ambient_color;
-        uniform vec4 diffuse_color;  
+       // uniform vec4 diffuse_color;  
         uniform vec4 specular_color; 
         uniform float Ka;   // Ambient reflection coefficient
         uniform float Kd;   // Diffuse reflection coefficient
@@ -67,7 +70,7 @@ namespace MeshRenderer {
         /*
         vec3 vert(float x,float y) {
             vec2 tv=texture_coordinates+vec2(x,y);
-            float r=texture2D(albedo,(texture_offset+tv)*texture_scale).z;
+            float r=texture2D(diffuse,(texture_offset+tv)*texture_scale).z;
             return vec3(tv.x,r,tv.z);
         }
         vec3 norm() {
@@ -79,6 +82,20 @@ namespace MeshRenderer {
         }*/
         float gray(vec4 c) {
             return (c.x+c.y+c.z+1.0)/4.0;
+        }
+        float ggx (vec3 N, vec3 V, vec3 L, float roughness, float F0) {
+            float alpha = roughness*roughness;
+            vec3 H = normalize(L - V);
+            float dotLH = max(0.0, dot(L,H));
+            float dotNH = max(0.0, dot(N,H));
+            float dotNL = max(0.0, dot(N,L));
+            float alphaSqr = alpha * alpha;
+            float denom = dotNH * dotNH * (alphaSqr - 1.0) + 1.0;
+            float D = alphaSqr / (3.141592653589793 * denom * denom);
+            float F = F0 + (1.0 - F0) * pow(1.0 - dotLH, 5.0);
+            float k = 0.5 * alpha;
+            float k2 = k * k;
+            return dotNL * D * F / (dotLH*dotLH*(1.0-k2)+k2);
         }
         void main() {            
             bool fog_exponential=false;
@@ -100,15 +117,20 @@ namespace MeshRenderer {
                     vec3 halfwayDir = normalize(L + V);  
                     specular = pow(max(dot(N, halfwayDir), 0.0), shininess);
                 } else  { 
-                    specular = pow(max(dot(R, V), 0.0), shininess); 
+                    specular = ggx(N,V,L,1.0,shininess); // pow(max(dot(R, V), 0.0), shininess); 
                 }
             } 
             // vec4 tex_color=vec4(N,1.0); // debug normals
-            vec4 tex_color=texture2D(albedo,uvc)*albedo_color;//vec4(1.0)*gray(texture2D(albedo,uvc));
+            vec4 tex_color=texture2D(diffuse,uvc)*diffuse_color;//vec4(1.0)*gray(texture2D(diffuse,uvc));
+            vec4 spc_serasa=(Ks * specular * specular_color);
+            if(has_specular_map) {
+                spc_serasa=spc_serasa*texture2D(specular_map,uvc); //length(texture2D(specular_map,uvc))
 
-            gl_FragColor = Ka * ambient_color*tex_color +
-                                Kd * lambertian * diffuse_color*tex_color +
-                                Ks * specular * specular_color;
+            }
+
+            gl_FragColor = Ka * ambient_color * tex_color +
+                                Kd * lambertian * tex_color +
+                                spc_serasa;
             // cubemap reflection
             if(mirror>0.05) { 
                 vec3 VI = normalize(vpos - cameraPos);
@@ -146,15 +168,25 @@ namespace MeshRenderer {
  
 
        shader_program.use(); 
-        if(material.albedo.id) material.albedo.bind();
+       
+        shader_program.uniform("diffuse",0);  
+
+        if(material.diffuse.id) material.diffuse.bind();
         else glBindTexture(GL_TEXTURE_2D, blank_texture);
 
         if(material.cubemap.is_cubemap) {
             material.cubemap.bind(1);
           //  printf("bindoq %d \n",material.cubemap.id);
         }
-        shader_program.uniform("albedo",0);
+        if(material.specular_map.is_texture()) {  
+            shader_program.uniform("has_specular_map",true);
+            material.specular_map.bind(2);
+        } else {
+            shader_program.uniform("has_specular_map",false);
+        }
         shader_program.uniform("cubemap",1);
+        shader_program.uniform("specular_map",2);
+
         shader_program.uniform_mat4("model_matrix",model_matrix);
         shader_program.uniform_mat4("view_matrix",view_matrix); 
         shader_program.uniform_mat4("projection_matrix",projection_matrix);
@@ -168,7 +200,6 @@ namespace MeshRenderer {
         shader_program.uniform_color("ambient_color",material.ambient_color);
         shader_program.uniform_color("diffuse_color",material.diffuse_color);
         shader_program.uniform_color("specular_color",material.specular_color);
-        shader_program.uniform_color("albedo_color",material.albedo_color);
         shader_program.uniform("Ka",material.Ka);
         shader_program.uniform("Kd",material.Kd);
         shader_program.uniform("Ks",material.Ks);

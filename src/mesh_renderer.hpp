@@ -84,13 +84,14 @@ namespace MeshRenderer {
 
 
     struct Material { 
-        Texture albedo=Texture(0);
+        Texture diffuse=Texture(0);
         Texture cubemap=Texture(0);
+        Texture specular_map=Texture(0);
         Vec2 texture_scale=Vec2(1,1); 
         Vec2 texture_offset=Vec2(0,0);
-        Color albedo_color=Color(1,1,1,1);
+        Color diffuse_color=Color(1,1,1,1);
         Color ambient_color=Color(0.9,0.9,0.9,1);
-        Color diffuse_color=Color(1,1,1,1); 
+       // Color diffuse_color=Color(1,1,1,1); 
         Color specular_color=Color(1,1,1,1);
 
         float Ka=1.0f;   // Ambient reflection coefficient
@@ -139,7 +140,7 @@ namespace MeshRenderer {
             viewport=Rect();
             view_matrix=Mat4::IDENTITY(); 
             skybox.opaque();
-            skybox.albedo_color=Color::WHITE();
+            skybox.diffuse_color=Color::WHITE();
             skybox.diffuse_color=Color::WHITE();
             skybox.ambient_color=Color::WHITE();
             skybox.Ka=1;

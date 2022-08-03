@@ -6,14 +6,15 @@
 - point sprites // para grama
 - arvores e pedras nos chunks objetos estaticos
 
-- cubemaps
 - renderizador de texto gerador de mesh de texto
 - normal maps
 - criar um buffer de estado no lado do cpu. e testar velocidades
 - particulas - nao importante
 
 
-
+- specular maps -OK
+- GGX e phong -OK
+- cubemaps -OK
 - iluminacao phong OK
 - compilador de obj para .hpp OK
 - skybox  -OK

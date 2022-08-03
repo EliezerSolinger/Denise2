@@ -67,7 +67,7 @@ int main() {
     fpscamera.init(); 
 
     printf("chegou aqui 1\n");
-    fpscamera.camera.skybox.albedo=MeshRenderer::LOAD_TEXTURE("skybox2.jpg",true);
+    fpscamera.camera.skybox.diffuse=MeshRenderer::LOAD_TEXTURE("skybox2.jpg",true);
 
     printf("chegou aqui 2\n");
     Material material=Material(); 
@@ -76,20 +76,23 @@ int main() {
 
     Chunk chunk;
     chunk.load();
-    //material.albedo=chunk.texture.id;
+    //material.diffuse=chunk.texture.id;
 
     Material water;
-    water.albedo_color=Color(0.5, 0.5, 1, 1);
-    water.opaque();
+    water.diffuse_color=Color(0.5, 0.5, 1, 1);
+  //  water.opaque();
     water.Kd=0.2;
-    water.albedo=MeshRenderer::LOAD_TEXTURE("water1.jpg",true);
+    water.diffuse=MeshRenderer::LOAD_TEXTURE("water1.jpg",true);
+    water.specular_map=water.diffuse;
     water.texture_scale=Vec2(2000.f,2000.f);
     water.cubemap=MeshRenderer::LOAD_CUBEMAP("skybox2.jpg",true);
-    //water.cubemap=fpscamera.camera.skybox.albedo;
+    water.Ks=0.6;
+   water.shininess=2;
+    //water.cubemap=fpscamera.camera.skybox.diffuse;
     //water.cubemap=MeshRenderer::LOAD_CUBEMAP("skybox2.jpg",true);
    
     Material grid;
-    grid.albedo=load_grid_texture();
+    grid.diffuse=load_grid_texture();
     grid.opaque();
     
 
@@ -101,7 +104,7 @@ int main() {
     fpscamera.camera.fog_color=Color(0.05,0.06,0.1,1);
     int timerx=0;
     water.mirror=0.4;
-    //material.mirror=0.3;
+    material.mirror=0.3;
     //material.Ks=0.7;
    /// material.shininess=20;
     while(update()) {
@@ -135,7 +138,8 @@ int main() {
           //  if(Vec3::distance(ck.global_position(),Vec3(player_pos.x,0,player_pos.z))>render_distance*CHUNK_SIZE) continue;
             if(!ck.loaded) continue;
             if(ck.peak_height<0.5725490196) continue;
-            material.albedo=ck.texture.id;
+            material.diffuse=ck.texture.id;
+            material.specular_map=material.diffuse;
             auto ckpos=ck.global_position();
             if(
                 (fpscamera.camera.view_matrix*ckpos).z>CHUNK_SIZE

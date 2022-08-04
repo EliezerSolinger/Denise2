@@ -1,4 +1,4 @@
- 
+-mudar para opengl es 3.0, criar shaders compativeis opengl es 2.0.
 
 - frustrum culling e occlusion culling - em desenvolvimento
 

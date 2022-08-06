@@ -36,7 +36,7 @@ Texture load_grid_texture() {
         buffer.put_pixel_color(x,y,
             Color(0,0,0,(x%grid_distance==0 || y%grid_distance==0) ? 1.f : 0.f )
         ); 
-    }  
+    } 
     Texture texture=Texture::LOAD_FROM_BUFFER(buffer);
     buffer.free();         
     return texture; 
@@ -72,7 +72,9 @@ int main() {
     printf("chegou aqui 2\n");
     Material material=Material(); 
     material.opaque();
-    material.Kd=0.4;
+    material.Ka=0.1;
+    material.Kd=0.8f;
+    material.Ks=0.7;
 
     Chunk chunk;
     chunk.load();
@@ -82,15 +84,20 @@ int main() {
     water.diffuse_color=Color(0.5, 0.5, 1, 1);
   //  water.opaque();
     water.Kd=0.2;
-    water.diffuse=MeshRenderer::LOAD_TEXTURE("water1.jpg",true);
-    water.specular_map=water.diffuse;
+    water.diffuse=MeshRenderer::LOAD_TEXTURE("water1_COLOR.jpg",true);
+    water.specular_map=MeshRenderer::LOAD_TEXTURE("water1_SPEC.jpg",true);
+    water.normal_map=MeshRenderer::LOAD_TEXTURE("water1_NRM.jpg",true);
     water.texture_scale=Vec2(2000.f,2000.f);
     water.cubemap=MeshRenderer::LOAD_CUBEMAP("skybox2.jpg",true);
     water.Ks=0.6;
    water.shininess=2;
     //water.cubemap=fpscamera.camera.skybox.diffuse;
-    //water.cubemap=MeshRenderer::LOAD_CUBEMAP("skybox2.jpg",true);
+    water.cubemap=MeshRenderer::LOAD_CUBEMAP("skybox2.jpg",true);
    
+    material.diffuse=MeshRenderer::LOAD_TEXTURE("water1_COLOR.jpg",true);
+    material.specular_map=MeshRenderer::LOAD_TEXTURE("water1_SPEC.jpg",true);
+    material.normal_map=MeshRenderer::LOAD_TEXTURE("water1_NRM.jpg",true);
+
     Material grid;
     grid.diffuse=load_grid_texture();
     grid.opaque();
@@ -103,7 +110,7 @@ int main() {
     fpscamera.camera.fog_density=6;
     fpscamera.camera.fog_color=Color(0.05,0.06,0.1,1);
     int timerx=0;
-    water.mirror=0.4;
+    water.mirror=0.6;
     material.mirror=0.3;
     //material.Ks=0.7;
    /// material.shininess=20;
@@ -138,8 +145,7 @@ int main() {
           //  if(Vec3::distance(ck.global_position(),Vec3(player_pos.x,0,player_pos.z))>render_distance*CHUNK_SIZE) continue;
             if(!ck.loaded) continue;
             if(ck.peak_height<0.5725490196) continue;
-            material.diffuse=ck.texture.id;
-            material.specular_map=material.diffuse;
+            material.diffuse=ck.texture.id; 
             auto ckpos=ck.global_position();
             if(
                 (fpscamera.camera.view_matrix*ckpos).z>CHUNK_SIZE

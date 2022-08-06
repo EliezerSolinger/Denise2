@@ -1,22 +1,24 @@
 #ifndef MESH_RENDERER_HPP
 #define MESH_RENDERER_HPP
+
 #include <glad/glad.h>
 #include "dmath.hpp"
 #include "glhelpers.hpp"
-#include "dsystem.hpp"
-#include "mesh_renderer.hpp"
+#include "dsystem.hpp" 
+
+
 //#define DEBUG
 namespace MeshRenderer {
+
     using namespace DMath;
     using namespace DGL;
     using namespace DSystem; 
-
     GPUMesh mesh_quad();
     GPUMesh mesh_box();
     GPUMesh mesh_skybox();
 
     /** VBO VERTICE GPU FORMAT */
-    struct VertexData {  Vec3 vertex, normal; Vec2 uv;  };
+    struct VertexData {  Vec3 vertex, normal; Vec2 uv; Vec3 tangent; Vec3 bitangent; };  
 
     struct MeshTriangle { 
         struct VertIndex { uint32_t vert, uv,normal; } vertices[3];
@@ -38,7 +40,7 @@ namespace MeshRenderer {
         buff.free(); // porque ele nao copia o ponteiro apenas o reinterpreta
         return t;
     }
-    inline GPUMesh LOAD_MESH(VertexData*data,unsigned int vertices_count) {
+    inline GPUMesh LOAD_MESH(MeshRenderer::VertexData *data,unsigned int vertices_count) {
         #ifdef DEBUG
             printf("Loading mesh with %d vertices...\n",vertices_count);
         #endif
@@ -46,7 +48,7 @@ namespace MeshRenderer {
         for(int c=0; c<vertices_count; c++) vbo.bound_box.put_point(data[c].vertex);
         vbo.create();
         vbo.bind();
-        vbo.set_data(sizeof(VertexData)*vertices_count,data);
+        vbo.set_data(sizeof(MeshRenderer::VertexData)*vertices_count,data);
         vbo.unbind(); 
         return GPUMesh::FROM_VBO(vbo);
     }
@@ -60,14 +62,55 @@ namespace MeshRenderer {
 
         inline GPUMesh send_to_gpu() {
            // printf("%d triangles \n",triangles.size());
-            VertexData* data=new VertexData[triangles.size()*3];
-            for(uint32_t t=0; t<triangles.size(); t++) {
+            auto* data=new MeshRenderer::VertexData[triangles.size()*3];
+            for(uint32_t t=0; t<triangles.size(); t++) {  
+                
+                auto triangle=triangles[t];    
+
                 for(uint32_t v=0; v<3; v++) {
                     uint32_t vp=t*3+v; 
-                    auto triangle=triangles[t].vertices[v]; 
-                    data[vp].vertex=vertices[triangle.vert-1];
-                    data[vp].normal=triangle.normal ? normals[triangle.normal-1] : Vec3(0,0,0);
-                    data[vp].uv=triangle.uv ? uvs[triangle.uv-1] : Vec2(0,0); 
+                    auto vert_indexes=triangle.vertices[v]; 
+                    data[vp].vertex=vertices[vert_indexes.vert-1];
+                    data[vp].normal=vert_indexes.normal ? normals[vert_indexes.normal-1] : Vec3(0,0,0);
+                    data[vp].uv=vert_indexes.uv ? uvs[vert_indexes.uv-1] : Vec2(0,0);  
+                }
+
+                // TANGENT AND BITANGENT CALCULATION
+                auto t3=t*3;
+                Vec3 pos[]={
+                    data[t3].vertex,
+                    data[t3+1].vertex,
+                    data[t3+2].vertex
+                };
+                Vec2 uv[]={
+                    data[t3].uv,
+                    data[t3+1].uv,
+                    data[t3+2].uv
+                };
+                Vec3 edge1 = pos[1] - pos[0];
+                Vec3 edge2 = pos[2] - pos[0];
+                Vec2 deltaUV1 = uv[1] - uv[0];
+                Vec2 deltaUV2 = uv[2] - uv[0];
+                GLfloat f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+                
+                Vec3 tangent=(Vec3(
+                    (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x),
+                    (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y),
+                    (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z)                    
+                )*f).normalized(); 
+
+                Vec3 bitangent=(
+                    Vec3( 
+                        (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x),
+                        (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y),
+                        (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z)            
+                    ) * f
+                ).normalized();   
+
+                for(uint32_t v=0; v<3; v++) {
+                    uint32_t vp=t*3+v;  
+                    data[vp].tangent=tangent;
+                    data[vp].bitangent=bitangent;
                 }
             }
             GPUMesh mesh=LOAD_MESH(data,triangles.size()*3);
@@ -87,6 +130,7 @@ namespace MeshRenderer {
         Texture diffuse=Texture(0);
         Texture cubemap=Texture(0);
         Texture specular_map=Texture(0);
+        Texture normal_map=Texture(0);
         Vec2 texture_scale=Vec2(1,1); 
         Vec2 texture_offset=Vec2(0,0);
         Color diffuse_color=Color(1,1,1,1);
@@ -214,5 +258,5 @@ namespace MeshRenderer {
     bool draw(const GPUMesh vbo,Mat4 matrix,Camera camera,Material material);
     bool draw_sprite(Mat4 matrix,Vec3 camera_pos,Camera camera,Material material);
     void init();
-}
+};
 #endif

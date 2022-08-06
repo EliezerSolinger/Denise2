@@ -1,4 +1,7 @@
--mudar para opengl es 3.0, criar shaders compativeis opengl es 2.0.
+- converter calculo cores para vec3 e calcular o alpha separadamente
+- calcular a matriz TBN NO CPU e mandar ela para o gpu atraves do vertex buffer object
+
+- mudar para opengl es 3.0, criar shaders compativeis opengl es 2.0.
 
 - frustrum culling e occlusion culling - em desenvolvimento
 
@@ -7,11 +10,12 @@
 - arvores e pedras nos chunks objetos estaticos
 
 - renderizador de texto gerador de mesh de texto
-- normal maps
 - criar um buffer de estado no lado do cpu. e testar velocidades
 - particulas - nao importante
 
 
+
+- normal maps - OK
 - specular maps -OK
 - GGX e phong -OK
 - cubemaps -OK

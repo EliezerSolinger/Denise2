@@ -1,6 +1,11 @@
+- extrair itens do skyrim meshes e texturas para teste
+- traduzir o gerador de biomas do javascript para C++
+
+
+
 - converter calculo cores para vec3 e calcular o alpha separadamente
 - calcular a matriz TBN NO CPU e mandar ela para o gpu atraves do vertex buffer object
-
+- configurar a correção de gama
 - mudar para opengl es 3.0, criar shaders compativeis opengl es 2.0.
 
 - frustrum culling e occlusion culling - em desenvolvimento
@@ -9,8 +14,7 @@
 - point sprites // para grama
 - arvores e pedras nos chunks objetos estaticos
 
-- renderizador de texto gerador de mesh de texto
-- criar um buffer de estado no lado do cpu. e testar velocidades
+- renderizador de texto gerador de mesh de texto criar um buffer de estado no lado do cpu. e testar velocidades
 - particulas - nao importante
 
 

@@ -437,7 +437,12 @@ namespace DMath {
         inline Vec2 translation2D() const {return Vec2(m[3][0], m[3][1]);}
         inline Vec3 axis() const {return Vec3(m[0][0], m[1][0], m[2][0]);}
         inline Vec3 scale() const {return Vec3(m[0][0], m[1][1], m[2][2]);} 
-
+        /** NOT TESTED*/
+        inline float det() const {
+            return m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2]) -
+                   m[0][1] * (m[1][0] * m[2][2] - m[2][0] * m[1][2]) +
+                   m[0][2] * (m[1][0] * m[2][1] - m[2][0] * m[1][1]);
+        }                     
 
         Mat4 operator*(const Mat4& m) const { return Mat4::mul(*this,m); }
         Vec3 operator*(const Vec3& v) const { return (*this*IDENTITY().translated(v)).translation(); }
@@ -447,6 +452,8 @@ namespace DMath {
         }*/
     };
 
+
+    /** **/
     class Transform {
         public: Vec3 pos,size,angles;
         Transform() {

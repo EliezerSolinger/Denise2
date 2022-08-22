@@ -199,6 +199,7 @@ namespace DMath {
         Vec2 operator-() const { return Vec2(-x, -y); }
         
 
+        inline Vec2 flipped() const { return Vec2(y, x); }
         inline Vec2 inverse() const { return Vec2(-x, -y); }
         inline float dot() const { return x * x + y * y; }
         inline float length() const { return sqrt(dot()); }

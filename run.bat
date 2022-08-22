@@ -1,4 +1,4 @@
 @echo off
 cd build
-mingw32-make && mapgenerator
+mingw32-make && toca
 cd ..

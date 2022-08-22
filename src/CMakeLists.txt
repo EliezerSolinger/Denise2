@@ -31,8 +31,9 @@ add_executable(boxes
 )
 target_link_libraries(boxes denise2)
 
-add_executable(mapgenerator 
+add_executable(toca 
 	tocadolobo/main.cpp
+	tocadolobo/world/world.cpp
 )
-target_link_libraries(mapgenerator denise2)
+target_link_libraries(toca denise2)
 

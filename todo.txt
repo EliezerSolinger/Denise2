@@ -1,6 +1,5 @@
-- extrair itens do skyrim meshes e texturas para teste
 - traduzir o gerador de biomas do javascript para C++
--calcular determinante da matriz, adicionar tipos mat3 e mat2 no dmath.hpp, inserir calculos de inverso e determinante. o dmath.hpp tem que ter todas as funcoes do glsl
+- calcular determinante da matriz, adicionar tipos mat3 e mat2 no dmath.hpp, inserir calculos de inverso e determinante. o dmath.hpp tem que ter todas as funcoes do glsl
 
 - converter calculo cores para vec3 e calcular o alpha separadamente
 - calcular a matriz TBN NO CPU e mandar ela para o gpu atraves do vertex buffer object
@@ -28,5 +27,5 @@
 - fog OK
 - traduzir todo o código restante  para o wrapper glhelper..  OK
 
-
+- extrair itens do skyrim meshes e texturas para teste -OK
 - refatorar codigo dos chunks - OK
